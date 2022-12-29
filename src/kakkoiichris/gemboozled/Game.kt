@@ -1,6 +1,7 @@
 package kakkoiichris.gemboozled
 
 import kakkoiichris.hypergame.input.Input
+import kakkoiichris.hypergame.media.Colors
 import kakkoiichris.hypergame.media.Renderer
 import kakkoiichris.hypergame.state.State
 import kakkoiichris.hypergame.state.StateManager
@@ -28,6 +29,9 @@ object Game : State {
     }
     
     override fun render(view: View, renderer: Renderer) {
+        renderer.color = Colors.black
+        renderer.fill(view.bounds.rectangle)
+        
         board.render(view, renderer)
     }
     

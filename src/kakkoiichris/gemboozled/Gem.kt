@@ -22,7 +22,7 @@ import kotlin.random.Random
  *
  * @author Christian Bryce Alexander
  */
-class Gem(x: Double, y: Double, val color: Color, val type: Type) : Box(x + 1, y, SIZE - 2.0, SIZE.toDouble()), Renderable {
+class Gem(x: Double, y: Double, val color: Color, val type: Type) : Box(x, y, SIZE.toDouble(), SIZE.toDouble()), Renderable {
     companion object {
         const val SIZE = 51
         
@@ -62,11 +62,10 @@ class Gem(x: Double, y: Double, val color: Color, val type: Type) : Box(x + 1, y
         type.affectBoard(row, column, color, board)
     
     override fun update(view: View, manager: StateManager, time: Time, input: Input) {
-    
     }
     
     override fun render(view: View, renderer: Renderer) {
-        renderer.fillOval(this)
+        renderer.drawSheet(Resources.gems, type.ordinal, color.ordinal, this)
     }
     
     enum class Color {

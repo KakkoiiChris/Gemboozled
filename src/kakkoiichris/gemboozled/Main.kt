@@ -14,6 +14,8 @@ import kakkoiichris.hypergame.view.Display
  * @author Christian Bryce Alexander
  */
 fun main() {
+    Resources
+    
     val width = (Game.BORDER * 2) + (Gem.SIZE * 10)
     val height = (Game.BORDER * 2) + (Gem.SIZE * 10)
     
