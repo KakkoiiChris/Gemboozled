@@ -6,6 +6,7 @@ import kakkoiichris.hypergame.media.Renderer
 import kakkoiichris.hypergame.state.StateManager
 import kakkoiichris.hypergame.util.Time
 import kakkoiichris.hypergame.util.math.Box
+import kakkoiichris.hypergame.util.math.Vector
 import kakkoiichris.hypergame.view.View
 
 import kotlin.random.Random
@@ -23,6 +24,32 @@ import kotlin.random.Random
  * @author Christian Bryce Alexander
  */
 class Gem(x: Double, y: Double, val color: Color, val type: Type) : Box(x, y, SIZE.toDouble(), SIZE.toDouble()), Renderable {
+    private var velocity = Vector()
+    private var acceleration = Vector()
+    
+    var removed = false
+    
+    fun affectBoard(row: Int, column: Int, board: Board) =
+        type.affectBoard(row, column, color, board)
+    
+    override fun update(view: View, manager: StateManager, time: Time, input: Input) {
+        velocity += acceleration * time.delta
+        position += velocity
+    }
+    
+    override fun render(view: View, renderer: Renderer) {
+        renderer.drawSheet(Resources.gems, type.ordinal, color.ordinal, this)
+    }
+    
+    enum class Color {
+        RED, ORANGE, YELLOW, GREEN, BLUE, PURPLE, WHITE;
+        
+        companion object {
+            fun random(random: Random = Random.Default) =
+                values()[random.nextInt(values().size)]
+        }
+    }
+    
     companion object {
         const val SIZE = 51
         
@@ -55,25 +82,6 @@ class Gem(x: Double, y: Double, val color: Color, val type: Type) : Box(x, y, SI
             }
             
             return Gem(x, y, color, type)
-        }
-    }
-    
-    fun affectBoard(row: Int, column: Int, board: Board) =
-        type.affectBoard(row, column, color, board)
-    
-    override fun update(view: View, manager: StateManager, time: Time, input: Input) {
-    }
-    
-    override fun render(view: View, renderer: Renderer) {
-        renderer.drawSheet(Resources.gems, type.ordinal, color.ordinal, this)
-    }
-    
-    enum class Color {
-        RED, ORANGE, YELLOW, GREEN, BLUE, PURPLE, WHITE;
-        
-        companion object {
-            fun random(random: Random = Random.Default) =
-                values()[random.nextInt(values().size)]
         }
     }
     

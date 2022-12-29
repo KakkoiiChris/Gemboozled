@@ -25,8 +25,8 @@ class Board(val size: Int) : Renderable {
     val gems = mutableListOf<Gem>()
     
     init {
-        for (y in 0 until 10) {
-            for (x in 0 until 10) {
+        for (y in 0 until size) {
+            for (x in 0 until size) {
                 gems.add(Gem.random((x * Gem.SIZE).toDouble(), (y * Gem.SIZE).toDouble()))
             }
         }
@@ -36,7 +36,13 @@ class Board(val size: Int) : Renderable {
     
     fun removeAt(row: Int, column: Int) {}
     
-    fun removeIf(predicate: (Gem) -> Boolean) {}
+    fun removeIf(predicate: (Gem) -> Boolean) {
+        for (gem in gems) {
+            if (predicate(gem)) {
+                gem.removed = true
+            }
+        }
+    }
     
     override fun update(view: View, manager: StateManager, time: Time, input: Input) {
         gems.forEach { it.update(view, manager, time, input) }
