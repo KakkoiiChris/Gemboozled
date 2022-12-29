@@ -1,0 +1,92 @@
+Gems:
+	Basic:
+		- Diamond
+			- Green
+		- Triangle
+			- Red
+		- Square
+			- Blue
+		- Hexagon
+			- Yellow
+		- Octagon
+			- Cyan
+		- Pearl
+			- Magenta
+		- Rhombus
+			- White
+	Special:
+		- Cross
+			- All Colors
+			- Eliminates all gems above, below, cl, and cr of it
+				0 0 * 0 0 0 0 0
+				0 0 * 0 0 0 0 0
+				0 0 * 0 0 0 0 0
+				* * @ * * * * *
+				0 0 * 0 0 0 0 0
+				0 0 * 0 0 0 0 0
+				0 0 * 0 0 0 0 0
+				0 0 * 0 0 0 0 0
+		- Explosive
+			- All Colors
+			- Eliminates a small diamond of gems surrounding it
+				0 0 0 0 0 0 0 0
+				0 0 * 0 0 0 0 0
+				0 * * * 0 0 0 0
+				* * @ * * 0 0 0
+				0 * * * 0 0 0 0
+				0 0 * 0 0 0 0 0
+				0 0 0 0 0 0 0 0
+				0 0 0 0 0 0 0 0
+		- Sole
+			- All Colors
+			- Eliminates all gems of the same color
+		- Scatter
+			- All Colors
+			- Eliminates 5 other gems at random
+				0 0 0 0 0 0 0 0
+				* 0 0 0 0 0 * 0
+				0 0 0 * 0 0 0 0
+				0 0 @ 0 0 0 0 0
+				0 * 0 0 0 0 0 0
+				0 0 0 0 * 0 0 0
+				0 0 0 0 0 0 0 0
+				0 0 0 0 0 0 0 0
+		- Warp
+			- All Colors
+			- Can be swapped with any gem on the board
+		- Omni
+			- All colors all at once
+			- Can be used to make any match of one color
+	Time:
+		- 10 Second
+			- All colors
+			- Common
+			- +10 seconds of time
+		- 20 Second
+			- All colors
+			- Moderately Uncommon
+			- +20 seconds of time
+		- 30 Second
+			- All colors
+			- Rare
+			- +30 seconds of time
+		- -10 Second
+			- All colors
+			- Moderately Uncommon
+			- -10 seconds of time
+
+Game Modes:
+	Simplicity
+		- basic gems only, simple time limit, strive for the top score
+	Contingency
+		- basic gems and time gems, extend time limit for as long as possible
+	Insanity
+		- all gems, special gems in profuse amounts, strive for top score
+	Progressivity
+		- basic and special gems, different levels with progressively larger score goals
+	Velocity
+		- basic gems only, shorter time limit, strive for top score
+	Totality
+		- basic and special gems, no time limit, board doesn't refill with gems, eliminate as many gems as possible
+	Integrity
+		-
