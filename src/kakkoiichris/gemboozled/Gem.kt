@@ -1,6 +1,5 @@
 package kakkoiichris.gemboozled
 
-import kakkoiichris.hypergame.input.Button
 import kakkoiichris.hypergame.input.Input
 import kakkoiichris.hypergame.media.Renderable
 import kakkoiichris.hypergame.media.Renderer
@@ -27,7 +26,7 @@ class Gem(x: Double, y: Double, val color: Color, val type: Type) : Box(x, y, SI
     private var velocity = Vector()
     private var acceleration = Vector(0.0, 0.125)
     
-    private var gemUnder: Gem? = null
+    var gemUnder: Gem? = null
     
     var falling = false
     
@@ -52,6 +51,12 @@ class Gem(x: Double, y: Double, val color: Color, val type: Type) : Box(x, y, SI
     
     override fun render(view: View, renderer: Renderer) {
         renderer.drawSheet(Resources.gems, type.ordinal, color.ordinal, this)
+    }
+    
+    fun swapUnder(gem: Gem) {
+        val under = gemUnder
+        gemUnder = gem.gemUnder
+        gem.gemUnder = under
     }
     
     fun remove() {
@@ -166,7 +171,7 @@ class Gem(x: Double, y: Double, val color: Color, val type: Type) : Box(x, y, SI
                         rr = Random.nextInt(game.boardSize)
                         cc = Random.nextInt(game.boardSize)
                     }
-                    while (!game.isRemoved(rr, cc))
+                    while (game.isRemoved(rr, cc) == false)
                     
                     game.removeAt(rr, cc)
                 }
