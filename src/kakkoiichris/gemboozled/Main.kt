@@ -21,7 +21,7 @@ fun main() {
     
     val display = Display(width, height, title = "Gemboozled")
     
-    display.manager += Game
+    display.manager += Game(10)
     
     display.open()
 }

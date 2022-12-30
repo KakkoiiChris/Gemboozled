@@ -1,11 +1,13 @@
 package kakkoiichris.gemboozled
 
+import kakkoiichris.hypergame.input.Button
 import kakkoiichris.hypergame.input.Input
 import kakkoiichris.hypergame.media.Renderable
 import kakkoiichris.hypergame.media.Renderer
 import kakkoiichris.hypergame.state.StateManager
 import kakkoiichris.hypergame.util.Time
 import kakkoiichris.hypergame.util.math.Box
+import kakkoiichris.hypergame.util.math.QuadTree
 import kakkoiichris.hypergame.util.math.Vector
 import kakkoiichris.hypergame.view.View
 
@@ -23,23 +25,68 @@ import kotlin.random.Random
  *
  * @author Christian Bryce Alexander
  */
-class Gem(x: Double, y: Double, val color: Color, val type: Type) : Box(x, y, SIZE.toDouble(), SIZE.toDouble()), Renderable {
+class Gem(x: Double, y: Double, val color: Color, val type: Type) : Box(x, y, SIZE.toDouble(), SIZE.toDouble()), Renderable, QuadTree.Element {
     private var velocity = Vector()
-    private var acceleration = Vector()
+    private var acceleration = Vector(0.0, 0.125)
+    
+    private var gemUnder: Gem? = null
+    
+    var falling = false
     
     var removed = false
     
-    fun affectBoard(row: Int, column: Int, board: Board) =
-        type.affectBoard(row, column, color, board)
+    override val bounds get() = this
     
     override fun update(view: View, manager: StateManager, time: Time, input: Input) {
-        velocity += acceleration * time.delta
-        position += velocity
+        if (falling) {
+            velocity += acceleration
+            position += velocity * time.delta
+        }
+        
+        if (gemUnder?.falling == true) {
+            falling = true
+        }
+        
+        if (gemUnder?.removed == true) {
+            gemUnder = null
+            
+            falling = true
+        }
+        
+        if (input.mouse !in this) return
+        
+        if (input.buttonDown(Button.LEFT)) {
+            remove()
+        }
+        
+        if (input.buttonDown(Button.RIGHT)) {
+            falling = true
+        }
     }
     
     override fun render(view: View, renderer: Renderer) {
         renderer.drawSheet(Resources.gems, type.ordinal, color.ordinal, this)
     }
+    
+    fun remove() {
+        removed = true
+        falling = false
+        velocity.zero()
+    }
+    
+    fun halt() {
+        falling = false
+        velocity.zero()
+    }
+    
+    fun halt(gem: Gem) {
+        falling = false
+        velocity.zero()
+        gemUnder = gem
+    }
+    
+    fun affectBoard(row: Int, column: Int, game: Game) =
+        type.affectBoard(row, column, color, game)
     
     enum class Color {
         RED, ORANGE, YELLOW, GREEN, BLUE, PURPLE, WHITE;
@@ -89,53 +136,53 @@ class Gem(x: Double, y: Double, val color: Color, val type: Type) : Box(x, y, SI
         BASIC,
         
         CROSS {
-            override fun affectBoard(row: Int, column: Int, color: Color, board: Board) {
-                for (i in 0 until board.size) {
-                    board.removeAt(row, i)
-                    board.removeAt(i, column)
+            override fun affectBoard(row: Int, column: Int, color: Color, game: Game) {
+                for (i in 0 until game.boardSize) {
+                    game.removeAt(row, i)
+                    game.removeAt(i, column)
                 }
             }
         },
         
         EXPLODE {
-            override fun affectBoard(row: Int, column: Int, color: Color, board: Board) {
+            override fun affectBoard(row: Int, column: Int, color: Color, game: Game) {
                 for (rowOffset in -2..2) {
                     val actualRow = row + rowOffset
                     
-                    if (actualRow !in 0 until board.size) continue
+                    if (actualRow !in 0 until game.boardSize) continue
                     
                     for (columnOffset in -2..2) {
                         val actualColumn = column + columnOffset
                         
-                        if (actualColumn !in 0 until board.size) continue
+                        if (actualColumn !in 0 until game.boardSize) continue
                         
                         if (manhattanDistance(0, 0, rowOffset, columnOffset) > 2) continue
                         
-                        board.removeAt(row + rowOffset, column + columnOffset)
+                        game.removeAt(row + rowOffset, column + columnOffset)
                     }
                 }
             }
         },
         
         SOLE {
-            override fun affectBoard(row: Int, column: Int, color: Color, board: Board) {
-                board.removeIf { gem -> color === gem.color }
+            override fun affectBoard(row: Int, column: Int, color: Color, game: Game) {
+                game.removeIf { gem -> color === gem.color }
             }
         },
         
         SCATTER {
-            override fun affectBoard(row: Int, column: Int, color: Color, board: Board) {
+            override fun affectBoard(row: Int, column: Int, color: Color, game: Game) {
                 repeat(10) {
                     var rr: Int
                     var cc: Int
                     
                     do {
-                        rr = Random.nextInt(board.size)
-                        cc = Random.nextInt(board.size)
+                        rr = Random.nextInt(game.boardSize)
+                        cc = Random.nextInt(game.boardSize)
                     }
-                    while (!board.isRemoved(rr, cc))
+                    while (!game.isRemoved(rr, cc))
                     
-                    board.removeAt(rr, cc)
+                    game.removeAt(rr, cc)
                 }
             }
         },
@@ -149,20 +196,20 @@ class Gem(x: Double, y: Double, val color: Color, val type: Type) : Box(x, y, SI
         },
         
         TEN_SECOND {
-            override fun affectBoard(row: Int, column: Int, color: Color, board: Board) {
-                board.gameTime += 10
+            override fun affectBoard(row: Int, column: Int, color: Color, game: Game) {
+                game.gameTime += 10
             }
         },
         
         TWENTY_SECOND {
-            override fun affectBoard(row: Int, column: Int, color: Color, board: Board) {
-                board.gameTime += 20
+            override fun affectBoard(row: Int, column: Int, color: Color, game: Game) {
+                game.gameTime += 20
             }
         },
         
         THIRTY_SECOND {
-            override fun affectBoard(row: Int, column: Int, color: Color, board: Board) {
-                board.gameTime += 30
+            override fun affectBoard(row: Int, column: Int, color: Color, game: Game) {
+                game.gameTime += 30
             }
         };
         
@@ -171,6 +218,6 @@ class Gem(x: Double, y: Double, val color: Color, val type: Type) : Box(x, y, SI
         open fun allowMove(ra: Int, ca: Int, rb: Int, cb: Int) =
             manhattanDistance(ra, ca, rb, cb) == 1
         
-        open fun affectBoard(row: Int, column: Int, color: Color, board: Board) = Unit
+        open fun affectBoard(row: Int, column: Int, color: Color, game: Game) = Unit
     }
 }
