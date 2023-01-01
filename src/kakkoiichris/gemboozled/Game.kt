@@ -2,6 +2,7 @@ package kakkoiichris.gemboozled
 
 import kakkoiichris.hypergame.input.Button
 import kakkoiichris.hypergame.input.Input
+import kakkoiichris.hypergame.input.Key
 import kakkoiichris.hypergame.media.Colors
 import kakkoiichris.hypergame.media.Renderer
 import kakkoiichris.hypergame.state.State
@@ -11,7 +12,9 @@ import kakkoiichris.hypergame.util.math.Box
 import kakkoiichris.hypergame.util.math.Vector
 import kakkoiichris.hypergame.util.math.easing.Path
 import kakkoiichris.hypergame.view.View
+import java.awt.BasicStroke
 import java.awt.Color
+import java.awt.Font
 import kotlin.math.max
 import kotlin.math.pow
 
@@ -20,21 +23,29 @@ class Game(val boardSize: Int) : State {
     var gameTime = 120.0
     var totalTime = 0.0
     
-    private val boardBounds = Box(BORDER.toDouble(), BORDER.toDouble(), (Gem.SIZE * boardSize).toDouble(), (Gem.SIZE * boardSize).toDouble())
+    private val titleBox = Box(BORDER.toDouble(), BORDER.toDouble(), (Gem.SIZE * boardSize).toDouble(), BORDER * 2.0)
+    
+    private val boardBox = Box(BORDER.toDouble(), titleBox.bottom + BORDER, (Gem.SIZE * boardSize).toDouble(), (Gem.SIZE * boardSize).toDouble())
+    
+    private val statsBox = Box(BORDER.toDouble(), boardBox.bottom + BORDER, (Gem.SIZE * boardSize).toDouble(), BORDER * 4.0)
+    
+    private val timeBox: Box
+    private val scoreBox: Box
+    private val comboBox: Box
     
     private val gems = mutableListOf<Gem>()
     
     private lateinit var gemFirst: Gem
     private lateinit var gemSecond: Gem
     
-    private val pathFirst = Path(Path.Equation.BACK_OUT, Path.Equation.BACK_OUT, Vector(), Vector(), 40.0)
-    private val pathSecond = Path(Path.Equation.BACK_OUT, Path.Equation.BACK_OUT, Vector(), Vector(), 40.0)
+    private val pathFirst = Path(Path.Equation.BACK_OUT, Path.Equation.BACK_OUT, Vector(), Vector(), 30.0)
+    private val pathSecond = Path(Path.Equation.BACK_OUT, Path.Equation.BACK_OUT, Vector(), Vector(), 30.0)
     
     private val grid = mutableMapOf<String, Gem>()
     
     private val scoredGems = mutableListOf<Gem>()
     
-    private var chaining = false
+    private val selecting get() = state in listOf(GameState.SELECT_FIRST, GameState.SELECT_SECOND)
     
     private var score = 0
     private var combo = 0
@@ -44,18 +55,28 @@ class Game(val boardSize: Int) : State {
     
     private val explosions = mutableListOf<Explosion>()
     
+    private var waitTime = 0.0
+    
+    private var hue = 0.0
+    
     override val name = ID
     
     init {
         fillOffBoard()
+        
+        val (a, b, c) = statsBox.divide(3, 1)
+        
+        timeBox = a
+        scoreBox = b
+        comboBox = c
     }
     
     private fun fillOffBoard() {
         for (row in 0 until boardSize) {
             for (column in 0 until boardSize) {
                 val gem = Gem.random(
-                    (column * Gem.SIZE).toDouble() + boardBounds.x,
-                    (row * Gem.SIZE).toDouble() + boardBounds.y - boardBounds.height
+                    (column * Gem.SIZE).toDouble() + boardBox.x,
+                    (row * Gem.SIZE).toDouble() + boardBox.y - boardBox.height
                 )
                 
                 gem.falling = true
@@ -78,6 +99,17 @@ class Game(val boardSize: Int) : State {
             explosions.filter(Explosion::removed).forEach { explosions.remove(it) }
         }
         
+        Resources.select.update(time)
+        
+        hue += time.delta * 0.005
+        
+        gameTime -= time.seconds
+        totalTime += time.seconds
+        
+        if (selecting && gameTime <= 0) {
+            state = GameState.GAME_OVER
+        }
+        
         when (state) {
             GameState.SELECT_FIRST  -> {
                 if (!input.buttonDown(Button.LEFT)) return
@@ -94,8 +126,6 @@ class Game(val boardSize: Int) : State {
             }
             
             GameState.SELECT_SECOND -> {
-                Resources.select.update(time)
-                
                 if (!input.buttonDown(Button.LEFT)) return
                 
                 for (gem in gems) {
@@ -107,9 +137,7 @@ class Game(val boardSize: Int) : State {
                     val (rb, cb) = getCoords(gemSecond)
                     
                     if (!(gemFirst.type.allowMove(ra, ca, rb, cb) || gemSecond.type.allowMove(ra, ca, rb, cb))) {
-                        println("NOPE!")
-                        
-                        state = GameState.SELECT_FIRST
+                        state = GameState.NO_SWAP
                         
                         return
                     }
@@ -125,10 +153,24 @@ class Game(val boardSize: Int) : State {
                     pathSecond.start = gemSecond.position
                     pathSecond.end = gemFirst.position
                     
-                    state = GameState.SWAP
+                    waitTime = 0.0
+                    
+                    state = GameState.SELECT_WAIT
                     
                     return
                 }
+            }
+            
+            GameState.SELECT_WAIT   -> {
+                waitTime += time.seconds
+                
+                if (waitTime < 0.2) return
+                
+                state = GameState.SWAP
+            }
+            
+            GameState.NO_SWAP       -> {
+                state = GameState.SELECT_FIRST
             }
             
             GameState.SWAP          -> {
@@ -167,8 +209,6 @@ class Game(val boardSize: Int) : State {
                 generateGrid()
                 
                 if (!matchGems()) {
-                    chaining = false
-                    
                     maxCombo = max(combo, maxCombo)
                     
                     combo = 0
@@ -177,8 +217,6 @@ class Game(val boardSize: Int) : State {
                 }
                 
                 if (removeGems()) {
-                    chaining = true
-                    
                     combo++
                     
                     for (gem in scoredGems) {
@@ -208,8 +246,8 @@ class Game(val boardSize: Int) : State {
                             if (get(row, column) != null) continue
                             
                             val gem = Gem.random(
-                                (column * Gem.SIZE).toDouble() + boardBounds.x,
-                                (row * Gem.SIZE).toDouble() + boardBounds.y - boardBounds.height
+                                (column * Gem.SIZE).toDouble() + boardBox.x,
+                                (row * Gem.SIZE).toDouble() + boardBox.y - boardBox.height
                             )
                             
                             gem.falling = true
@@ -247,10 +285,10 @@ class Game(val boardSize: Int) : State {
                     for (thisGem in gems) {
                         if (!thisGem.falling) continue
                         
-                        if (thisGem.bottom > boardBounds.bottom) {
+                        if (thisGem.bottom > boardBox.bottom) {
                             thisGem.halt()
                             
-                            thisGem.bottom = boardBounds.bottom
+                            thisGem.bottom = boardBox.bottom
                         }
                         
                         for (thatGem in gems) {
@@ -267,21 +305,35 @@ class Game(val boardSize: Int) : State {
                 
                 if (gems.none { it.falling }) state = GameState.MATCH
             }
+            
+            GameState.GAME_OVER     -> {
+                if (!input.keyDown(Key.ESCAPE)) return
+                
+                gems.clear()
+                
+                fillOffBoard()
+                
+                score = 0
+                
+                gameTime = 120.0
+                totalTime = 0.0
+                
+                combo = 0
+                maxCombo = 0
+                
+                state = GameState.FALL
+            }
         }
     }
     
     private fun generateGrid() {
         grid.clear()
         
-        grid.putAll(gems.associateBy {
-            val (row, column) = getCoords(it)
-            
-            "$row,$column"
-        })
+        grid.putAll(gems.associateBy(::getCoordsString))
     }
     
     private fun getCoords(gem: Gem) =
-        (gem.y - boardBounds.y).toInt() / Gem.SIZE to (gem.x - boardBounds.x).toInt() / Gem.SIZE
+        (gem.y - boardBox.y).toInt() / Gem.SIZE to (gem.x - boardBox.x).toInt() / Gem.SIZE
     
     private fun getCoordsString(gem: Gem): String {
         val (row, column) = getCoords(gem)
@@ -479,16 +531,20 @@ class Game(val boardSize: Int) : State {
         renderer.color = Colors.black
         renderer.fill(view.bounds.rectangle)
         
-        renderer.push()
-        renderer.clip = boardBounds.rectangle
-        
         renderer.color = Color(255, 255, 255, 63)
+        
+        renderer.fillRoundRect(titleBox, 8, 8)
+        renderer.fillRoundRect(timeBox, 8, 8)
+        renderer.fillRoundRect(comboBox, 8, 8)
+        
+        renderer.push()
+        renderer.clip = boardBox.rectangle
         
         for (row in 0 until boardSize) {
             for (column in 0 until boardSize) {
                 if ((row + column) % 2 == 0) continue
                 
-                renderer.fillRect((column * Gem.SIZE) + boardBounds.x.toInt(), (row * Gem.SIZE) + boardBounds.y.toInt(), Gem.SIZE, Gem.SIZE)
+                renderer.fillRect((column * Gem.SIZE) + boardBox.x.toInt(), (row * Gem.SIZE) + boardBox.y.toInt(), Gem.SIZE, Gem.SIZE)
             }
         }
         
@@ -498,12 +554,58 @@ class Game(val boardSize: Int) : State {
         
         renderer.pop()
         
+        if (state === GameState.SELECT_FIRST || state === GameState.SELECT_SECOND) {
+            //renderer.drawImage(Resources.crosshair, view.input.mouse - 32.0)
+        }
+        
         if (state === GameState.SELECT_SECOND) {
             renderer.drawAnimation(Resources.select, gemFirst.center - 32.0)
         }
         
+        if (state === GameState.SELECT_WAIT) {
+            renderer.drawAnimation(Resources.select, gemFirst.center - 32.0)
+            
+            renderer.drawAnimation(Resources.select, gemSecond.center - 32.0)
+        }
+        
         renderer.color = Colors.white
-        renderer.drawRoundRect(boardBounds, 8, 8)
+        renderer.stroke = BasicStroke(2F)
+        
+        renderer.drawRoundRect(titleBox, 8, 8)
+        renderer.drawRoundRect(boardBox, 8, 8)
+        renderer.drawRoundRect(statsBox, 8, 8)
+        
+        renderer.font = Font(Resources.font, Font.PLAIN, BORDER * 3 / 2)
+        
+        renderer.drawString("Gemboozled!", titleBox)
+        
+        renderer.font = Font(Resources.font, Font.PLAIN, BORDER)
+        
+        val minutes = max(gameTime / 60, 0.0).toInt()
+        val seconds = max(gameTime % 60, 0.0).toInt()
+        val microseconds = (max((gameTime % 60) % 1, 0.0) * 100).toInt()
+        
+        val timeString = String.format("Time: %d:%02d:%02d", minutes, seconds, microseconds)
+        
+        renderer.drawString("TIME", timeBox, xAlign = 0.1)
+        renderer.drawString(timeString, timeBox, xAlign = 0.9)
+        
+        renderer.drawString("SCORE", scoreBox, xAlign = 0.1)
+        renderer.drawString("Score: $score", scoreBox, xAlign = 0.9)
+        
+        renderer.drawString("COMBO", comboBox, xAlign = 0.1)
+        renderer.drawString("Combo: $combo / $maxCombo", comboBox, xAlign = 0.9)
+        
+        if (state == GameState.GAME_OVER) {
+            renderer.color = Color(0, 0, 0, 191)
+            
+            renderer.fillRect(view.bounds)
+            
+            renderer.color = Colors.white
+            renderer.font = Font(Resources.font, Font.PLAIN, BORDER * 4)
+            
+            renderer.drawString("GAME OVER", view.bounds)
+        }
     }
     
     override fun halt(view: View) {
@@ -518,7 +620,7 @@ class Game(val boardSize: Int) : State {
     
     fun removeIf(predicate: (Gem) -> Boolean) {
         for (gem in gems) {
-            if (gem.intersects(boardBounds) && predicate(gem)) {
+            if (gem.intersects(boardBox) && predicate(gem)) {
                 removeGem(gem)
             }
         }
@@ -532,10 +634,13 @@ class Game(val boardSize: Int) : State {
     enum class GameState {
         SELECT_FIRST,
         SELECT_SECOND,
+        SELECT_WAIT,
+        NO_SWAP,
         SWAP,
         VALIDATE,
         MATCH,
         RETURN,
-        FALL
+        FALL,
+        GAME_OVER
     }
 }
