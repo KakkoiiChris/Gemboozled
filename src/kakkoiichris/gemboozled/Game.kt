@@ -19,10 +19,10 @@ import kotlin.math.max
 import kotlin.math.pow
 
 // Christian Alexander, 12/28/2022
-class Game(val boardSize: Int) : State {
-    private val titleBox = Box(BORDER.toDouble(), BORDER.toDouble(), (Gem.SIZE * boardSize).toDouble(), BORDER * 2.0)
-    private val boardBox = Box(BORDER.toDouble(), titleBox.bottom + BORDER, (Gem.SIZE * boardSize).toDouble(), (Gem.SIZE * boardSize).toDouble())
-    private val statsBox = Box(BORDER.toDouble(), boardBox.bottom + BORDER, (Gem.SIZE * boardSize).toDouble(), BORDER * 4.0)
+class Game(val gameMode: GameMode) : State {
+    private val titleBox = Box(BORDER.toDouble(), BORDER.toDouble(), (Gem.SIZE * gameMode.boardSize).toDouble(), BORDER * 2.0)
+    private val boardBox = Box(BORDER.toDouble(), titleBox.bottom + BORDER, (Gem.SIZE * gameMode.boardSize).toDouble(), (Gem.SIZE * gameMode.boardSize).toDouble())
+    private val statsBox = Box(BORDER.toDouble(), boardBox.bottom + BORDER, (Gem.SIZE * gameMode.boardSize).toDouble(), BORDER * 4.0)
     
     private val timeBox: Box
     private val scoreBox: Box
@@ -46,7 +46,7 @@ class Game(val boardSize: Int) : State {
     
     private val selecting get() = state in listOf(GameState.SELECT_FIRST, GameState.SELECT_SECOND)
     
-    var gameTime = 120.0
+    var gameTime = gameMode.time
     private var totalTime = 0.0
     private var timePaused = true
     
@@ -64,7 +64,7 @@ class Game(val boardSize: Int) : State {
     override val name = ID
     
     init {
-        fillOffBoard()
+        fillOffBoard(gameMode::getRandomStartGem)
         
         val (a, b, c) = statsBox.divide(3, 1)
         
@@ -255,7 +255,7 @@ class Game(val boardSize: Int) : State {
                     for (gem in gems.sortedByDescending { it.y }) {
                         val (row, column) = getCoords(gem)
                         
-                        if (row == boardSize - 1) continue
+                        if (row == gameMode.boardSize - 1) continue
                         
                         val other = get(row + 1, column)
                         
@@ -264,20 +264,7 @@ class Game(val boardSize: Int) : State {
                         }
                     }
                     
-                    for (row in -boardSize..-1) {
-                        for (column in 0 until boardSize) {
-                            if (get(row, column) != null) continue
-                            
-                            val gem = Gem.random(
-                                (column * Gem.SIZE).toDouble() + boardBox.x,
-                                (row * Gem.SIZE).toDouble() + boardBox.y - boardBox.height
-                            )
-                            
-                            gem.falling = true
-                            
-                            gems.add(gem)
-                        }
-                    }
+                    fillOffBoard(gameMode::getRandomGem)
                     
                     state = GameState.FALL
                 }
@@ -306,11 +293,11 @@ class Game(val boardSize: Int) : State {
                 
                 gems.clear()
                 
-                fillOffBoard()
+                fillOffBoard(gameMode::getRandomStartGem)
                 
                 score = 0
                 
-                gameTime = 120.0
+                gameTime = gameMode.time
                 totalTime = 0.0
                 timePaused = true
                 
@@ -335,8 +322,8 @@ class Game(val boardSize: Int) : State {
         renderer.push()
         renderer.clip = boardBox.rectangle
         
-        for (row in 0 until boardSize) {
-            for (column in 0 until boardSize) {
+        for (row in 0 until gameMode.boardSize) {
+            for (column in 0 until gameMode.boardSize) {
                 if ((row + column) % 2 == 0) continue
                 
                 renderer.fillRect((column * Gem.SIZE) + boardBox.x.toInt(), (row * Gem.SIZE) + boardBox.y.toInt(), Gem.SIZE, Gem.SIZE)
@@ -368,7 +355,7 @@ class Game(val boardSize: Int) : State {
         
         renderer.font = Font(Resources.font, Font.PLAIN, BORDER * 3 / 2)
         
-        renderer.drawString("Gemboozled!", titleBox)
+        renderer.drawString("Gemboozled ${gameMode.modeName}!", titleBox)
         
         renderer.font = Font(Resources.font, Font.PLAIN, BORDER)
         
@@ -421,10 +408,10 @@ class Game(val boardSize: Int) : State {
         }
     }
     
-    private fun fillOffBoard() {
-        for (row in 0 until boardSize) {
-            for (column in 0 until boardSize) {
-                val gem = Gem.random(
+    private fun fillOffBoard(getter:(Double, Double)->Gem) {
+        for (row in 0 until gameMode.boardSize) {
+            for (column in 0 until gameMode.boardSize) {
+                val gem = getter(
                     (column * Gem.SIZE).toDouble() + boardBox.x,
                     (row * Gem.SIZE).toDouble() + boardBox.y - boardBox.height
                 )
@@ -496,7 +483,7 @@ class Game(val boardSize: Int) : State {
             get(row - 1, column)?.color
         else null
         
-        val colorDown = if (row + 1 < boardSize)
+        val colorDown = if (row + 1 < gameMode.boardSize)
             get(row + 1, column)?.color
         else null
         
@@ -504,7 +491,7 @@ class Game(val boardSize: Int) : State {
             get(row, column - 1)?.color
         else null
         
-        val colorRight = if (column + 1 < boardSize)
+        val colorRight = if (column + 1 < gameMode.boardSize)
             get(row, column + 1)?.color
         else null
         
@@ -512,7 +499,7 @@ class Game(val boardSize: Int) : State {
             get(row - 2, column)?.color
         else null
         
-        val color2Down = if (row + 2 < boardSize)
+        val color2Down = if (row + 2 < gameMode.boardSize)
             get(row + 2, column)?.color
         else null
         
@@ -520,7 +507,7 @@ class Game(val boardSize: Int) : State {
             get(row, column - 2)?.color
         else null
         
-        val color2Right = if (column + 2 < boardSize)
+        val color2Right = if (column + 2 < gameMode.boardSize)
             get(row, column + 2)?.color
         else null
         
@@ -540,15 +527,15 @@ class Game(val boardSize: Int) : State {
     private fun matchGems(): Boolean {
         var matched = false
         
-        for (row in 0 until boardSize) {
-            for (column in 0 until boardSize) {
+        for (row in 0 until gameMode.boardSize) {
+            for (column in 0 until gameMode.boardSize) {
                 val colorCenter = get(row, column)?.color ?: continue
                 
                 val colorUp = if (row - 1 >= 0)
                     get(row - 1, column)?.color
                 else null
                 
-                val colorDown = if (row + 1 < boardSize)
+                val colorDown = if (row + 1 < gameMode.boardSize)
                     get(row + 1, column)?.color
                 else null
                 
@@ -556,7 +543,7 @@ class Game(val boardSize: Int) : State {
                     get(row, column - 1)?.color
                 else null
                 
-                val colorRight = if (column + 1 < boardSize)
+                val colorRight = if (column + 1 < gameMode.boardSize)
                     get(row, column + 1)?.color
                 else null
                 
@@ -603,7 +590,7 @@ class Game(val boardSize: Int) : State {
             }
         }
         
-        for (i in r + 1 until boardSize) {
+        for (i in r + 1 until gameMode.boardSize) {
             val gem = get(i, c)
             
             if (gem?.color == color) {
@@ -631,7 +618,7 @@ class Game(val boardSize: Int) : State {
             }
         }
         
-        for (i in column + 1 until boardSize) {
+        for (i in column + 1 until gameMode.boardSize) {
             val gem = get(row, i)
             
             if (gem?.color == color) {
@@ -656,8 +643,8 @@ class Game(val boardSize: Int) : State {
     private fun clearRemovedGems(): Boolean {
         var removed = false
         
-        for (r in 0 until boardSize) {
-            for (c in 0 until boardSize) {
+        for (r in 0 until gameMode.boardSize) {
+            for (c in 0 until gameMode.boardSize) {
                 val gem = get(r, c)
                 
                 if (gem != null && gem.removed) {

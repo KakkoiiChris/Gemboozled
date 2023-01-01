@@ -21,7 +21,7 @@ fun main() {
     
     val display = Display(width, height, title = "Gemboozled", icon = Resources.icon)
     
-    display.manager += Game(10)
+    display.manager += Game(GameMode.Builtin.CLASSIC)
     
     display.open()
 }
