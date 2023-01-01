@@ -7,7 +7,6 @@ import kakkoiichris.hypergame.state.StateManager
 import kakkoiichris.hypergame.util.Time
 import kakkoiichris.hypergame.util.math.Box
 import kakkoiichris.hypergame.util.math.Vector
-import kakkoiichris.hypergame.util.math.clamp
 import kakkoiichris.hypergame.view.View
 import kotlin.random.Random
 
@@ -60,37 +59,6 @@ class Gem(x: Double, y: Double, val color: Color, val type: Type) : Box(x, y, SI
     
     companion object {
         const val SIZE = 51
-        
-        fun random(x: Double, y: Double, random: Random = Random.Default): Gem {
-            val color = Color.random(random)
-            
-            val type = if (random.nextDouble() < 0.85) {
-                Type.BASIC
-            }
-            else {
-                val s = random.nextDouble()
-                
-                when {
-                    s < 1.0 / 7.0 -> Type.CROSS
-                    s < 2.0 / 7.0 -> Type.EXPLODE
-                    s < 3.0 / 7.0 -> Type.SOLE
-                    s < 4.0 / 7.0 -> Type.SCATTER
-                    s < 5.0 / 7.0 -> Type.WARP
-                    s < 6.0 / 7.0 -> Type.BONUS
-                    else          -> {
-                        val t = random.nextDouble()
-                        
-                        when {
-                            t < 1.0 / 2.0 -> Type.TEN_SECOND
-                            t < 5.0 / 6.0 -> Type.TWENTY_SECOND
-                            else          -> Type.THIRTY_SECOND
-                        }
-                    }
-                }
-            }
-            
-            return Gem(x, y, color, type)
-        }
     }
     
     enum class Color {
@@ -107,7 +75,7 @@ class Gem(x: Double, y: Double, val color: Color, val type: Type) : Box(x, y, SI
         
         CROSS {
             override fun affectGame(row: Int, column: Int, color: Color, game: Game) {
-                for (i in 0 until game.boardSize) {
+                for (i in 0 until game.gameMode.boardSize) {
                     game.removeAt(row, i)
                     game.removeAt(i, column)
                 }
@@ -119,12 +87,12 @@ class Gem(x: Double, y: Double, val color: Color, val type: Type) : Box(x, y, SI
                 for (rowOffset in -2..2) {
                     val actualRow = row + rowOffset
                     
-                    if (actualRow !in 0 until game.boardSize) continue
+                    if (actualRow !in 0 until game.gameMode.boardSize) continue
                     
                     for (columnOffset in -2..2) {
                         val actualColumn = column + columnOffset
                         
-                        if (actualColumn !in 0 until game.boardSize) continue
+                        if (actualColumn !in 0 until game.gameMode.boardSize) continue
                         
                         if (manhattanDistance(0, 0, rowOffset, columnOffset) > 2) continue
                         
@@ -147,8 +115,8 @@ class Gem(x: Double, y: Double, val color: Color, val type: Type) : Box(x, y, SI
                     var cc: Int
                     
                     do {
-                        rr = Random.nextInt(game.boardSize)
-                        cc = Random.nextInt(game.boardSize)
+                        rr = Random.nextInt(game.gameMode.boardSize)
+                        cc = Random.nextInt(game.gameMode.boardSize)
                     }
                     while (game.isRemoved(rr, cc) == true)
                     
