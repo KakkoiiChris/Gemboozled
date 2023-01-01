@@ -7,6 +7,8 @@ import kakkoiichris.hypergame.util.filesystem.ResourceManager
 
 // Christian Alexander, 12/29/2022
 object Resources {
+    val icon: Sprite
+    
     val gems: SpriteSheet
     
     val crosshair: Sprite
@@ -24,7 +26,9 @@ object Resources {
         val fonts = manager.getFolder("fnt")
         //val sounds = manager.getFolder("sfx")
         
-        val gemsSprite = images.getSprite("gemsBright")
+        icon = images.getSprite("icon")
+        
+        val gemsSprite = images.getSprite("gems")
         
         gems = SpriteSheet(gemsSprite, Gem.SIZE, Gem.SIZE)
         
