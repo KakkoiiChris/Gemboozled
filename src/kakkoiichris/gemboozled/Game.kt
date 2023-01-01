@@ -11,6 +11,7 @@ import kakkoiichris.hypergame.util.math.Box
 import kakkoiichris.hypergame.util.math.Vector
 import kakkoiichris.hypergame.util.math.easing.Path
 import kakkoiichris.hypergame.view.View
+import java.awt.Color
 import kotlin.math.max
 import kotlin.math.pow
 
@@ -26,8 +27,8 @@ class Game(val boardSize: Int) : State {
     private lateinit var gemFirst: Gem
     private lateinit var gemSecond: Gem
     
-    private val pathFirst = Path(Path.Equation.CUBIC_BOTH, Path.Equation.CUBIC_BOTH, Vector(), Vector(), 30.0)
-    private val pathSecond = Path(Path.Equation.CUBIC_BOTH, Path.Equation.CUBIC_BOTH, Vector(), Vector(), 30.0)
+    private val pathFirst = Path(Path.Equation.BACK_OUT, Path.Equation.BACK_OUT, Vector(), Vector(), 40.0)
+    private val pathSecond = Path(Path.Equation.BACK_OUT, Path.Equation.BACK_OUT, Vector(), Vector(), 40.0)
     
     private val grid = mutableMapOf<String, Gem>()
     
@@ -41,14 +42,20 @@ class Game(val boardSize: Int) : State {
     
     private var state = GameState.FALL
     
+    private val explosions = mutableListOf<Explosion>()
+    
     override val name = ID
     
     init {
-        for (y in 0 until boardSize) {
-            for (x in 0 until boardSize) {
+        fillOffBoard()
+    }
+    
+    private fun fillOffBoard() {
+        for (row in 0 until boardSize) {
+            for (column in 0 until boardSize) {
                 val gem = Gem.random(
-                    (x * Gem.SIZE).toDouble() + boardBounds.x,
-                    (y * Gem.SIZE).toDouble() + boardBounds.y - boardBounds.height
+                    (column * Gem.SIZE).toDouble() + boardBounds.x,
+                    (row * Gem.SIZE).toDouble() + boardBounds.y - boardBounds.height
                 )
                 
                 gem.falling = true
@@ -65,7 +72,11 @@ class Game(val boardSize: Int) : State {
     }
     
     override fun update(view: View, manager: StateManager, time: Time, input: Input) {
-        println("$score, $combo, $maxCombo")
+        if (explosions.isNotEmpty()) {
+            explosions.forEach { it.update(view, manager, time, input) }
+            
+            explosions.filter(Explosion::removed).forEach { explosions.remove(it) }
+        }
         
         when (state) {
             GameState.SELECT_FIRST  -> {
@@ -83,6 +94,8 @@ class Game(val boardSize: Int) : State {
             }
             
             GameState.SELECT_SECOND -> {
+                Resources.select.update(time)
+                
                 if (!input.buttonDown(Button.LEFT)) return
                 
                 for (gem in gems) {
@@ -93,7 +106,7 @@ class Game(val boardSize: Int) : State {
                     val (ra, ca) = getCoords(gemFirst)
                     val (rb, cb) = getCoords(gemSecond)
                     
-                    if (!gemFirst.type.allowMove(ra, ca, rb, cb)) {
+                    if (!(gemFirst.type.allowMove(ra, ca, rb, cb) || gemSecond.type.allowMove(ra, ca, rb, cb))) {
                         println("NOPE!")
                         
                         state = GameState.SELECT_FIRST
@@ -127,7 +140,7 @@ class Game(val boardSize: Int) : State {
                 
                 if (!(pathFirst.hasElapsed || pathSecond.hasElapsed)) return
                 
-                state = GameState.MATCH
+                state = GameState.VALIDATE
             }
             
             GameState.VALIDATE      -> {
@@ -146,8 +159,6 @@ class Game(val boardSize: Int) : State {
                     
                     return
                 }
-                
-                TODO("SWAP NEIGHBORS")
                 
                 state = GameState.MATCH
             }
@@ -176,6 +187,37 @@ class Game(val boardSize: Int) : State {
                     
                     scoredGems.clear()
                     
+                    gems.removeIf(Gem::removed)
+                    
+                    generateGrid()
+                    
+                    for (gem in gems.sortedByDescending { it.y }) {
+                        val (row, column) = getCoords(gem)
+                        
+                        if (row == boardSize - 1) continue
+                        
+                        val other = get(row + 1, column)
+                        
+                        if (other == null || other.falling) {
+                            gem.falling = true
+                        }
+                    }
+                    
+                    for (row in -boardSize..-1) {
+                        for (column in 0 until boardSize) {
+                            if (get(row, column) != null) continue
+                            
+                            val gem = Gem.random(
+                                (column * Gem.SIZE).toDouble() + boardBounds.x,
+                                (row * Gem.SIZE).toDouble() + boardBounds.y - boardBounds.height
+                            )
+                            
+                            gem.falling = true
+                            
+                            gems.add(gem)
+                        }
+                    }
+                    
                     state = GameState.FALL
                 }
             }
@@ -193,16 +235,14 @@ class Game(val boardSize: Int) : State {
             }
             
             GameState.FALL          -> {
-                val steps = 5
+                val steps = 10
                 
-                val newTime = time / steps
+                val newTime = time / steps * 0.95
                 
                 repeat(steps) {
                     for (gem in gems) {
                         gem.update(view, manager, newTime, input)
                     }
-                    
-                    gems.removeIf(Gem::removed)
                     
                     for (thisGem in gems) {
                         if (!thisGem.falling) continue
@@ -218,7 +258,7 @@ class Game(val boardSize: Int) : State {
                             
                             if (!thisGem.intersects(thatGem) || thatGem.falling) continue
                             
-                            thisGem.halt(thatGem)
+                            thisGem.halt()
                             
                             thisGem.bottom = thatGem.top
                         }
@@ -228,10 +268,6 @@ class Game(val boardSize: Int) : State {
                 if (gems.none { it.falling }) state = GameState.MATCH
             }
         }
-        
-        //explosions.forEach { it.update(view, manager, time, input) }
-        
-        //explosions.filter(Explosion::removed).forEach { explosions.remove(it) }
     }
     
     private fun generateGrid() {
@@ -416,9 +452,9 @@ class Game(val boardSize: Int) : State {
     }
     
     private fun removeGem(gem: Gem?) {
-        gem?.removed = true
+        gem?.remove()
         
-        //explosions += Explosion(gem?.x ?: 0.0, gem?.y ?: 0.0)
+        explosions += Explosion(gem?.x ?: 0.0, gem?.y ?: 0.0)
     }
     
     private fun removeGems(): Boolean {
@@ -446,9 +482,25 @@ class Game(val boardSize: Int) : State {
         renderer.push()
         renderer.clip = boardBounds.rectangle
         
+        renderer.color = Color(255, 255, 255, 63)
+        
+        for (row in 0 until boardSize) {
+            for (column in 0 until boardSize) {
+                if ((row + column) % 2 == 0) continue
+                
+                renderer.fillRect((column * Gem.SIZE) + boardBounds.x.toInt(), (row * Gem.SIZE) + boardBounds.y.toInt(), Gem.SIZE, Gem.SIZE)
+            }
+        }
+        
         gems.forEach { it.render(view, renderer) }
         
+        explosions.forEach { it.render(view, renderer) }
+        
         renderer.pop()
+        
+        if (state === GameState.SELECT_SECOND) {
+            renderer.drawAnimation(Resources.select, gemFirst.center - 32.0)
+        }
         
         renderer.color = Colors.white
         renderer.drawRoundRect(boardBounds, 8, 8)
@@ -461,13 +513,13 @@ class Game(val boardSize: Int) : State {
         grid["$row,$column"]?.removed
     
     fun removeAt(row: Int, column: Int) {
-        grid["$row,$column"]?.removed = true
+        removeGem(grid["$row,$column"])
     }
     
     fun removeIf(predicate: (Gem) -> Boolean) {
         for (gem in gems) {
-            if (predicate(gem)) {
-                gem.removed = true
+            if (gem.intersects(boardBounds) && predicate(gem)) {
+                removeGem(gem)
             }
         }
     }

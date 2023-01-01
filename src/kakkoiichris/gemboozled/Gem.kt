@@ -24,9 +24,7 @@ import kotlin.random.Random
  */
 class Gem(x: Double, y: Double, val color: Color, val type: Type) : Box(x, y, SIZE.toDouble(), SIZE.toDouble()), Renderable {
     private var velocity = Vector()
-    private var acceleration = Vector(0.0, 0.125)
-    
-    var gemUnder: Gem? = null
+    private var acceleration = Vector(0.0, 0.1)
     
     var falling = false
     
@@ -37,26 +35,10 @@ class Gem(x: Double, y: Double, val color: Color, val type: Type) : Box(x, y, SI
             velocity += acceleration
             position += velocity * time.delta
         }
-        
-        if (gemUnder?.falling == true) {
-            falling = true
-        }
-        
-        if (gemUnder?.removed == true) {
-            gemUnder = null
-            
-            falling = true
-        }
     }
     
     override fun render(view: View, renderer: Renderer) {
         renderer.drawSheet(Resources.gems, type.ordinal, color.ordinal, this)
-    }
-    
-    fun swapUnder(gem: Gem) {
-        val under = gemUnder
-        gemUnder = gem.gemUnder
-        gem.gemUnder = under
     }
     
     fun remove() {
@@ -67,13 +49,7 @@ class Gem(x: Double, y: Double, val color: Color, val type: Type) : Box(x, y, SI
     
     fun halt() {
         falling = false
-        velocity.zero()
-    }
-    
-    fun halt(gem: Gem) {
-        falling = false
-        velocity.zero()
-        gemUnder = gem
+        velocity *= 0.0
     }
     
     fun affectGame(row: Int, column: Int, game: Game) =
@@ -163,7 +139,7 @@ class Gem(x: Double, y: Double, val color: Color, val type: Type) : Box(x, y, SI
         
         SCATTER {
             override fun affectGame(row: Int, column: Int, color: Color, game: Game) {
-                repeat(10) {
+                repeat(15) {
                     var rr: Int
                     var cc: Int
                     
@@ -171,7 +147,7 @@ class Gem(x: Double, y: Double, val color: Color, val type: Type) : Box(x, y, SI
                         rr = Random.nextInt(game.boardSize)
                         cc = Random.nextInt(game.boardSize)
                     }
-                    while (game.isRemoved(rr, cc) == false)
+                    while (game.isRemoved(rr, cc) == true)
                     
                     game.removeAt(rr, cc)
                 }

@@ -1,11 +1,16 @@
 package kakkoiichris.gemboozled
 
+import kakkoiichris.hypergame.media.Animation
 import kakkoiichris.hypergame.media.SpriteSheet
 import kakkoiichris.hypergame.util.filesystem.ResourceManager
 
 // Christian Alexander, 12/29/2022
 object Resources {
     val gems: SpriteSheet
+    
+    val select:Animation
+    
+    val explosion:Animation
     
     init {
         val manager = ResourceManager("/resources")
@@ -17,5 +22,15 @@ object Resources {
         val gemsSprite = images.getSprite("gems")
         
         gems = SpriteSheet(gemsSprite, Gem.SIZE, Gem.SIZE)
+        
+        val selectSprite = images.getSprite("select")
+        val selectSheet = SpriteSheet(selectSprite, 64, 64)
+        
+        select = Animation(selectSheet.sprites, 0.05, Animation.Style.LOOP)
+    
+        val explosionSprite = images.getSprite("explode")
+        val explosionSheet = SpriteSheet(explosionSprite, 64, 64)
+    
+        explosion = Animation(explosionSheet.sprites, 0.025, Animation.Style.LOOP)
     }
 }
