@@ -13,6 +13,8 @@ object Resources {
     
     val select: Animation
     
+    val x:Sprite
+    
     val explosion: Animation
     
     val font: String
@@ -35,10 +37,12 @@ object Resources {
         
         select = Animation(selectSheet.sprites, 0.05, Animation.Style.LOOP)
         
+        x = images.getSprite("x")
+        
         val explosionSprite = images.getSprite("explode")
         val explosionSheet = SpriteSheet(explosionSprite, 64, 64)
         
-        explosion = Animation(explosionSheet.sprites, 0.025, Animation.Style.LOOP)
+        explosion = Animation(explosionSheet.sprites, 0.025, Animation.Style.ONCE)
         
         font = fonts.getFont("charybdis")
     }

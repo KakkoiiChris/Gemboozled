@@ -20,13 +20,8 @@ import kotlin.math.pow
 
 // Christian Alexander, 12/28/2022
 class Game(val boardSize: Int) : State {
-    var gameTime = 120.0
-    var totalTime = 0.0
-    
     private val titleBox = Box(BORDER.toDouble(), BORDER.toDouble(), (Gem.SIZE * boardSize).toDouble(), BORDER * 2.0)
-    
     private val boardBox = Box(BORDER.toDouble(), titleBox.bottom + BORDER, (Gem.SIZE * boardSize).toDouble(), (Gem.SIZE * boardSize).toDouble())
-    
     private val statsBox = Box(BORDER.toDouble(), boardBox.bottom + BORDER, (Gem.SIZE * boardSize).toDouble(), BORDER * 4.0)
     
     private val timeBox: Box
@@ -47,16 +42,21 @@ class Game(val boardSize: Int) : State {
     
     private val scoredGems = mutableListOf<Gem>()
     
+    private val particles = mutableListOf<Particle>()
+    
     private val selecting get() = state in listOf(GameState.SELECT_FIRST, GameState.SELECT_SECOND)
     
+    var gameTime = 120.0
+    private var totalTime = 0.0
+    private var timePaused = true
+    
     private var score = 0
+    
     private var combo = 0
+    private var lastCombo = 0
     private var maxCombo = 0
     
-    private var state = GameState.FALL
-    
-    private val explosions = mutableListOf<Explosion>()
-    
+    private var state = GameState.START
     private var waitTime = 0.0
     
     private var hue = 0.0
@@ -68,24 +68,9 @@ class Game(val boardSize: Int) : State {
         
         val (a, b, c) = statsBox.divide(3, 1)
         
-        timeBox = a
-        scoreBox = b
-        comboBox = c
-    }
-    
-    private fun fillOffBoard() {
-        for (row in 0 until boardSize) {
-            for (column in 0 until boardSize) {
-                val gem = Gem.random(
-                    (column * Gem.SIZE).toDouble() + boardBox.x,
-                    (row * Gem.SIZE).toDouble() + boardBox.y - boardBox.height
-                )
-                
-                gem.falling = true
-                
-                gems.add(gem)
-            }
-        }
+        timeBox = a.resized(BORDER * -2.0)
+        scoreBox = b.resized(BORDER * -2.0)
+        comboBox = c.resized(BORDER * -2.0)
     }
     
     override fun swapTo(view: View, passed: List<Any>) {
@@ -95,24 +80,36 @@ class Game(val boardSize: Int) : State {
     }
     
     override fun update(view: View, manager: StateManager, time: Time, input: Input) {
-        if (explosions.isNotEmpty()) {
-            explosions.forEach { it.update(view, manager, time, input) }
+        if (particles.isNotEmpty()) {
+            particles.forEach { it.update(view, manager, time, input) }
             
-            explosions.filter(Explosion::removed).forEach { explosions.remove(it) }
+            particles.filter(Particle::removed).forEach { particles.remove(it) }
         }
         
         Resources.select.update(time)
         
         hue += time.delta * 0.005
         
-        gameTime -= time.seconds
-        totalTime += time.seconds
+        if (!timePaused) {
+            gameTime -= time.seconds
+            totalTime += time.seconds
+        }
         
         if (selecting && gameTime <= 0) {
             state = GameState.GAME_OVER
         }
         
         when (state) {
+            GameState.START         -> {
+                gemFall(view, manager, time, input)
+                
+                if (gems.none { it.falling }) {
+                    timePaused = false
+                    
+                    state = GameState.SELECT_FIRST
+                }
+            }
+            
             GameState.SELECT_FIRST  -> {
                 for (gem in gems) {
                     if (input.mouse in gem) {
@@ -185,12 +182,15 @@ class Game(val boardSize: Int) : State {
             GameState.SELECT_WAIT   -> {
                 waitTime += time.seconds
                 
-                if (waitTime < 0.2) return
+                if (waitTime < 0.25) return
                 
                 state = GameState.SWAP
             }
             
             GameState.NO_SWAP       -> {
+                particles.add(X(gemFirst.center))
+                particles.add(X(gemSecond.center))
+                
                 state = GameState.SELECT_FIRST
             }
             
@@ -230,6 +230,8 @@ class Game(val boardSize: Int) : State {
                 generateGrid()
                 
                 if (!matchGems()) {
+                    lastCombo = combo
+                    
                     maxCombo = max(combo, maxCombo)
                     
                     combo = 0
@@ -237,7 +239,7 @@ class Game(val boardSize: Int) : State {
                     state = GameState.SELECT_FIRST
                 }
                 
-                if (removeGems()) {
+                if (clearRemovedGems()) {
                     combo++
                     
                     for (gem in scoredGems) {
@@ -294,35 +296,7 @@ class Game(val boardSize: Int) : State {
             }
             
             GameState.FALL          -> {
-                val steps = 10
-                
-                val newTime = time / steps * 0.95
-                
-                repeat(steps) {
-                    for (gem in gems) {
-                        gem.update(view, manager, newTime, input)
-                    }
-                    
-                    for (thisGem in gems) {
-                        if (!thisGem.falling) continue
-                        
-                        if (thisGem.bottom > boardBox.bottom) {
-                            thisGem.halt()
-                            
-                            thisGem.bottom = boardBox.bottom
-                        }
-                        
-                        for (thatGem in gems) {
-                            if (thisGem === thatGem) continue
-                            
-                            if (!thisGem.intersects(thatGem) || thatGem.falling) continue
-                            
-                            thisGem.halt()
-                            
-                            thisGem.bottom = thatGem.top
-                        }
-                    }
-                }
+                gemFall(view, manager, time, input)
                 
                 if (gems.none { it.falling }) state = GameState.MATCH
             }
@@ -338,11 +312,158 @@ class Game(val boardSize: Int) : State {
                 
                 gameTime = 120.0
                 totalTime = 0.0
+                timePaused = true
                 
                 combo = 0
                 maxCombo = 0
                 
-                state = GameState.FALL
+                state = GameState.START
+            }
+        }
+    }
+    
+    override fun render(view: View, renderer: Renderer) {
+        renderer.color = Colors.black
+        renderer.fill(view.bounds.rectangle)
+        
+        renderer.color = Color(255, 255, 255, 63)
+        
+        renderer.fillRoundRect(titleBox, 8, 8)
+        renderer.fillRoundRect(timeBox, 8, 8)
+        renderer.fillRoundRect(comboBox, 8, 8)
+        
+        renderer.push()
+        renderer.clip = boardBox.rectangle
+        
+        for (row in 0 until boardSize) {
+            for (column in 0 until boardSize) {
+                if ((row + column) % 2 == 0) continue
+                
+                renderer.fillRect((column * Gem.SIZE) + boardBox.x.toInt(), (row * Gem.SIZE) + boardBox.y.toInt(), Gem.SIZE, Gem.SIZE)
+            }
+        }
+        
+        gems.forEach { it.render(view, renderer) }
+        
+        particles.forEach { it.render(view, renderer) }
+        
+        renderer.pop()
+        
+        if (state === GameState.SELECT_SECOND) {
+            renderer.drawAnimation(Resources.select, gemFirst.center - 32.0)
+        }
+        
+        if (state === GameState.SELECT_WAIT) {
+            renderer.drawAnimation(Resources.select, gemFirst.center - 32.0)
+            
+            renderer.drawAnimation(Resources.select, gemSecond.center - 32.0)
+        }
+        
+        renderer.color = Colors.white
+        renderer.stroke = BasicStroke(2F)
+        
+        renderer.drawRoundRect(titleBox, 8, 8)
+        renderer.drawRoundRect(boardBox, 8, 8)
+        renderer.drawRoundRect(statsBox, 8, 8)
+        
+        renderer.font = Font(Resources.font, Font.PLAIN, BORDER * 3 / 2)
+        
+        renderer.drawString("Gemboozled!", titleBox)
+        
+        renderer.font = Font(Resources.font, Font.PLAIN, BORDER)
+        
+        val minutes = max(gameTime / 60, 0.0).toInt()
+        val seconds = max(gameTime % 60, 0.0).toInt()
+        val microseconds = (max((gameTime % 60) % 1, 0.0) * 100).toInt()
+        
+        val timeString = "%d:%02d:%02d".format(minutes, seconds, microseconds)
+        
+        renderer.drawString("TIME", timeBox, xAlign = 0.0)
+        renderer.drawString(timeString, timeBox, xAlign = 1.0)
+        
+        val scoreString = "%,d".format(score)
+        
+        renderer.drawString("SCORE", scoreBox, xAlign = 0.0)
+        renderer.drawString(scoreString, scoreBox, xAlign = 1.0)
+        
+        val comboString = "$combo / $lastCombo / $maxCombo"
+        
+        renderer.drawString("COMBO", comboBox, xAlign = 0.0)
+        renderer.drawString(comboString, comboBox, xAlign = 1.0)
+        
+        if (state == GameState.GAME_OVER) {
+            renderer.color = Color(0, 0, 0, 191)
+            
+            renderer.fillRect(view.bounds)
+            
+            renderer.color = Colors.white
+            renderer.font = Font(Resources.font, Font.PLAIN, BORDER * 4)
+            
+            renderer.drawString("GAME OVER", view.bounds)
+        }
+    }
+    
+    override fun halt(view: View) {
+    }
+    
+    fun isRemoved(row: Int, column: Int) =
+        grid["$row,$column"]?.removed
+    
+    fun removeAt(row: Int, column: Int) {
+        removeGem(grid["$row,$column"])
+    }
+    
+    fun removeIf(predicate: (Gem) -> Boolean) {
+        for (gem in gems) {
+            if (gem.intersects(boardBox) && predicate(gem)) {
+                removeGem(gem)
+            }
+        }
+    }
+    
+    private fun fillOffBoard() {
+        for (row in 0 until boardSize) {
+            for (column in 0 until boardSize) {
+                val gem = Gem.random(
+                    (column * Gem.SIZE).toDouble() + boardBox.x,
+                    (row * Gem.SIZE).toDouble() + boardBox.y - boardBox.height
+                )
+                
+                gem.falling = true
+                
+                gems.add(gem)
+            }
+        }
+    }
+    
+    private fun gemFall(view: View, manager: StateManager, time: Time, input: Input) {
+        val steps = 10
+        
+        val newTime = time / steps * 0.95
+        
+        repeat(steps) {
+            for (gem in gems) {
+                gem.update(view, manager, newTime, input)
+            }
+            
+            for (thisGem in gems) {
+                if (!thisGem.falling) continue
+                
+                if (thisGem.bottom > boardBox.bottom) {
+                    thisGem.halt()
+                    
+                    thisGem.bottom = boardBox.bottom
+                }
+                
+                for (thatGem in gems) {
+                    if (thisGem === thatGem) continue
+                    
+                    if (!thisGem.intersects(thatGem) || thatGem.falling) continue
+                    
+                    thisGem.halt()
+                    
+                    thisGem.bottom = thatGem.top
+                }
             }
         }
     }
@@ -525,12 +646,14 @@ class Game(val boardSize: Int) : State {
     }
     
     private fun removeGem(gem: Gem?) {
-        gem?.remove()
+        if (gem == null) return
         
-        explosions += Explosion(gem?.x ?: 0.0, gem?.y ?: 0.0)
+        gem.remove()
+        
+        particles += Explosion(gem.center)
     }
     
-    private fun removeGems(): Boolean {
+    private fun clearRemovedGems(): Boolean {
         var removed = false
         
         for (r in 0 until boardSize) {
@@ -548,115 +671,13 @@ class Game(val boardSize: Int) : State {
         return removed
     }
     
-    override fun render(view: View, renderer: Renderer) {
-        renderer.color = Colors.black
-        renderer.fill(view.bounds.rectangle)
-        
-        renderer.color = Color(255, 255, 255, 63)
-        
-        renderer.fillRoundRect(titleBox, 8, 8)
-        renderer.fillRoundRect(timeBox, 8, 8)
-        renderer.fillRoundRect(comboBox, 8, 8)
-        
-        renderer.push()
-        renderer.clip = boardBox.rectangle
-        
-        for (row in 0 until boardSize) {
-            for (column in 0 until boardSize) {
-                if ((row + column) % 2 == 0) continue
-                
-                renderer.fillRect((column * Gem.SIZE) + boardBox.x.toInt(), (row * Gem.SIZE) + boardBox.y.toInt(), Gem.SIZE, Gem.SIZE)
-            }
-        }
-        
-        gems.forEach { it.render(view, renderer) }
-        
-        explosions.forEach { it.render(view, renderer) }
-        
-        renderer.pop()
-        
-        if (state === GameState.SELECT_FIRST || state === GameState.SELECT_SECOND) {
-            //renderer.drawImage(Resources.crosshair, view.input.mouse - 32.0)
-        }
-        
-        if (state === GameState.SELECT_SECOND) {
-            renderer.drawAnimation(Resources.select, gemFirst.center - 32.0)
-        }
-        
-        if (state === GameState.SELECT_WAIT) {
-            renderer.drawAnimation(Resources.select, gemFirst.center - 32.0)
-            
-            renderer.drawAnimation(Resources.select, gemSecond.center - 32.0)
-        }
-        
-        renderer.color = Colors.white
-        renderer.stroke = BasicStroke(2F)
-        
-        renderer.drawRoundRect(titleBox, 8, 8)
-        renderer.drawRoundRect(boardBox, 8, 8)
-        renderer.drawRoundRect(statsBox, 8, 8)
-        
-        renderer.font = Font(Resources.font, Font.PLAIN, BORDER * 3 / 2)
-        
-        renderer.drawString("Gemboozled!", titleBox)
-        
-        renderer.font = Font(Resources.font, Font.PLAIN, BORDER)
-        
-        val minutes = max(gameTime / 60, 0.0).toInt()
-        val seconds = max(gameTime % 60, 0.0).toInt()
-        val microseconds = (max((gameTime % 60) % 1, 0.0) * 100).toInt()
-        
-        val timeString = "%d:%02d:%02d".format(minutes, seconds, microseconds)
-        
-        renderer.drawString("TIME", timeBox, xAlign = 0.1)
-        renderer.drawString(timeString, timeBox, xAlign = 0.9)
-        
-        val scoreString = "%,d".format(score)
-        
-        renderer.drawString("SCORE", scoreBox, xAlign = 0.1)
-        renderer.drawString(scoreString, scoreBox, xAlign = 0.9)
-        
-        val comboString = "$combo / $maxCombo"
-        
-        renderer.drawString("COMBO", comboBox, xAlign = 0.1)
-        renderer.drawString(comboString, comboBox, xAlign = 0.9)
-        
-        if (state == GameState.GAME_OVER) {
-            renderer.color = Color(0, 0, 0, 191)
-            
-            renderer.fillRect(view.bounds)
-            
-            renderer.color = Colors.white
-            renderer.font = Font(Resources.font, Font.PLAIN, BORDER * 4)
-            
-            renderer.drawString("GAME OVER", view.bounds)
-        }
-    }
-    
-    override fun halt(view: View) {
-    }
-    
-    fun isRemoved(row: Int, column: Int) =
-        grid["$row,$column"]?.removed
-    
-    fun removeAt(row: Int, column: Int) {
-        removeGem(grid["$row,$column"])
-    }
-    
-    fun removeIf(predicate: (Gem) -> Boolean) {
-        for (gem in gems) {
-            if (gem.intersects(boardBox) && predicate(gem)) {
-                removeGem(gem)
-            }
-        }
-    }
-    
     companion object {
         const val ID = "game"
         const val BORDER = 25
     }
     
     enum class GameState {
+        START,
         SELECT_FIRST,
         SELECT_SECOND,
         SELECT_WAIT,

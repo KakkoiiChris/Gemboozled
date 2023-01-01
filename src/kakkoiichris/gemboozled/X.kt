@@ -6,30 +6,37 @@ import kakkoiichris.hypergame.state.StateManager
 import kakkoiichris.hypergame.util.Time
 import kakkoiichris.hypergame.util.math.Vector
 import kakkoiichris.hypergame.view.View
+import java.awt.AlphaComposite
 
 /**
  * Gemboozled
  *
- * Copyright (C) 2022, KakkoiiChris
+ * Copyright (C) 2023, KakkoiiChris
  *
- * File:    Explosion.kt
+ * File:    X.kt
  *
- * Created: Saturday, December 31, 2022, 22:01:49
+ * Created: Sunday, January 01, 2023, 15:36:56
  *
  * @author Christian Bryce Alexander
  */
-class Explosion(position:Vector) : Particle(position) {
-    private val animation = Resources.explosion.copy()
+class X(position: Vector) : Particle(position) {
+    private var alpha = 1.0
     
     override fun update(view: View, manager: StateManager, time: Time, input: Input) {
-        animation.update(time)
+        alpha -= time.delta * 0.05
         
-        if (animation.elapsed) {
+        if (alpha <= 0.0) {
             removed = true
         }
     }
     
     override fun render(view: View, renderer: Renderer) {
-        renderer.drawAnimation(animation, position - (animation.frame.size / 2.0))
+        renderer.push()
+        
+        renderer.composite = AlphaComposite.getInstance(AlphaComposite.SRC_OVER, alpha.toFloat())
+        
+        renderer.drawImage(Resources.x, position - (Resources.x.size / 2.0))
+        
+        renderer.pop()
     }
 }
