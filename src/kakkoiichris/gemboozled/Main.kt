@@ -19,7 +19,7 @@ fun main() {
     val width = (Game.BORDER * 2) + (Gem.SIZE * 10)
     val height = (Game.BORDER * 2) + (Gem.SIZE * 10) + Game.BORDER * 8
     
-    val display = Display(width, height, title = "Gemboozled")
+    val display = Display(width, height, title = "Gemboozled", icon = Resources.icon)
     
     display.manager += Game(10)
     
