@@ -11,8 +11,6 @@ object Resources {
     
     val gems: SpriteSheet
     
-    val crosshair: Sprite
-    
     val select: Animation
     
     val explosion: Animation
@@ -31,8 +29,6 @@ object Resources {
         val gemsSprite = images.getSprite("gems")
         
         gems = SpriteSheet(gemsSprite, Gem.SIZE, Gem.SIZE)
-        
-        crosshair = images.getSprite("crosshair")
         
         val selectSprite = images.getSprite("select")
         val selectSheet = SpriteSheet(selectSprite, 64, 64)

@@ -38,6 +38,8 @@ class Game(val boardSize: Int) : State {
     private lateinit var gemFirst: Gem
     private lateinit var gemSecond: Gem
     
+    private var gemHover: Gem? = null
+    
     private val pathFirst = Path(Path.Equation.BACK_OUT, Path.Equation.BACK_OUT, Vector(), Vector(), 30.0)
     private val pathSecond = Path(Path.Equation.BACK_OUT, Path.Equation.BACK_OUT, Vector(), Vector(), 30.0)
     
@@ -112,53 +114,72 @@ class Game(val boardSize: Int) : State {
         
         when (state) {
             GameState.SELECT_FIRST  -> {
+                for (gem in gems) {
+                    if (input.mouse in gem) {
+                        gemHover?.hovering = false
+                        
+                        gemHover = gem
+                        
+                        gemHover?.hovering = true
+                        
+                        break
+                    }
+                }
+                
                 if (!input.buttonDown(Button.LEFT)) return
                 
-                for (gem in gems) {
-                    if (input.mouse !in gem) continue
-                    
-                    gemFirst = gem
-                    
-                    state = GameState.SELECT_SECOND
-                    
-                    return
-                }
+                gemFirst = gemHover ?: return
+                
+                state = GameState.SELECT_SECOND
+                
+                return
             }
             
             GameState.SELECT_SECOND -> {
+                for (gem in gems) {
+                    if (input.mouse in gem) {
+                        gemHover?.hovering = false
+                        
+                        gemHover = gem
+                        
+                        gemHover?.hovering = true
+                        
+                        break
+                    }
+                }
+                
                 if (!input.buttonDown(Button.LEFT)) return
                 
-                for (gem in gems) {
-                    if (input.mouse !in gem) continue
-                    
-                    gemSecond = gem
-                    
-                    val (ra, ca) = getCoords(gemFirst)
-                    val (rb, cb) = getCoords(gemSecond)
-                    
-                    if (!(gemFirst.type.allowMove(ra, ca, rb, cb) || gemSecond.type.allowMove(ra, ca, rb, cb))) {
-                        state = GameState.NO_SWAP
-                        
-                        return
-                    }
-                    
-                    gems.add(gemSecond)
-                    gems.add(gemFirst)
-                    
-                    pathFirst.reset()
-                    pathFirst.start = gemFirst.position
-                    pathFirst.end = gemSecond.position
-                    
-                    pathSecond.reset()
-                    pathSecond.start = gemSecond.position
-                    pathSecond.end = gemFirst.position
-                    
-                    waitTime = 0.0
-                    
-                    state = GameState.SELECT_WAIT
+                gemSecond = gemHover ?: return
+                
+                gemHover?.hovering = false
+                gemHover = null
+                
+                val (ra, ca) = getCoords(gemFirst)
+                val (rb, cb) = getCoords(gemSecond)
+                
+                if (!(gemFirst.type.allowMove(ra, ca, rb, cb) || gemSecond.type.allowMove(ra, ca, rb, cb))) {
+                    state = GameState.NO_SWAP
                     
                     return
                 }
+                
+                gems.add(gemSecond)
+                gems.add(gemFirst)
+                
+                pathFirst.reset()
+                pathFirst.start = gemFirst.position
+                pathFirst.end = gemSecond.position
+                
+                pathSecond.reset()
+                pathSecond.start = gemSecond.position
+                pathSecond.end = gemFirst.position
+                
+                waitTime = 0.0
+                
+                gemHover = null
+                
+                state = GameState.SELECT_WAIT
             }
             
             GameState.SELECT_WAIT   -> {
@@ -585,16 +606,20 @@ class Game(val boardSize: Int) : State {
         val seconds = max(gameTime % 60, 0.0).toInt()
         val microseconds = (max((gameTime % 60) % 1, 0.0) * 100).toInt()
         
-        val timeString = String.format("Time: %d:%02d:%02d", minutes, seconds, microseconds)
+        val timeString = "%d:%02d:%02d".format(minutes, seconds, microseconds)
         
         renderer.drawString("TIME", timeBox, xAlign = 0.1)
         renderer.drawString(timeString, timeBox, xAlign = 0.9)
         
+        val scoreString = "%,d".format(score)
+        
         renderer.drawString("SCORE", scoreBox, xAlign = 0.1)
-        renderer.drawString("Score: $score", scoreBox, xAlign = 0.9)
+        renderer.drawString(scoreString, scoreBox, xAlign = 0.9)
+        
+        val comboString = "$combo / $maxCombo"
         
         renderer.drawString("COMBO", comboBox, xAlign = 0.1)
-        renderer.drawString("Combo: $combo / $maxCombo", comboBox, xAlign = 0.9)
+        renderer.drawString(comboString, comboBox, xAlign = 0.9)
         
         if (state == GameState.GAME_OVER) {
             renderer.color = Color(0, 0, 0, 191)

@@ -7,6 +7,7 @@ import kakkoiichris.hypergame.state.StateManager
 import kakkoiichris.hypergame.util.Time
 import kakkoiichris.hypergame.util.math.Box
 import kakkoiichris.hypergame.util.math.Vector
+import kakkoiichris.hypergame.util.math.clamp
 import kakkoiichris.hypergame.view.View
 import kotlin.random.Random
 
@@ -23,12 +24,14 @@ import kotlin.random.Random
  * @author Christian Bryce Alexander
  */
 class Gem(x: Double, y: Double, val color: Color, val type: Type) : Box(x, y, SIZE.toDouble(), SIZE.toDouble()), Renderable {
+    private val acceleration = Vector(0.0, 0.1)
     private var velocity = Vector()
-    private var acceleration = Vector(0.0, 0.1)
+    
+    private val sizeOffset get() = if (hovering) 16.0 else 0.0
     
     var falling = false
-    
     var removed = false
+    var hovering = false
     
     override fun update(view: View, manager: StateManager, time: Time, input: Input) {
         if (falling) {
@@ -38,7 +41,7 @@ class Gem(x: Double, y: Double, val color: Color, val type: Type) : Box(x, y, SI
     }
     
     override fun render(view: View, renderer: Renderer) {
-        renderer.drawSheet(Resources.gems, type.ordinal, color.ordinal, this)
+        renderer.drawSheet(Resources.gems, type.ordinal, color.ordinal, resized(sizeOffset))
     }
     
     fun remove() {
