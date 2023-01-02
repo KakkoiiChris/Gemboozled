@@ -408,9 +408,13 @@ class Game(val gameMode: GameMode) : State {
         }
     }
     
-    private fun fillOffBoard(getter:(Double, Double)->Gem) {
-        for (row in 0 until gameMode.boardSize) {
+    private fun fillOffBoard(getter: (Double, Double) -> Gem) {
+        generateGrid()
+        
+        for (row in -gameMode.boardSize until 0) {
             for (column in 0 until gameMode.boardSize) {
+                if (get(row, column) != null) continue
+                
                 val gem = getter(
                     (column * Gem.SIZE).toDouble() + boardBox.x,
                     (row * Gem.SIZE).toDouble() + boardBox.y - boardBox.height
