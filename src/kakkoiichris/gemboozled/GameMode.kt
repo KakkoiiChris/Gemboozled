@@ -34,29 +34,13 @@ interface GameMode {
         },
         
         TIME_TRIAL("Time Trial", 120.0, 10) {
-            override fun getRandomStartGem(x: Double, y: Double): Gem {
-                val color = Gem.Color.random()
-                
-                val type = if (Random.nextDouble() < 0.75) {
-                    Gem.Type.BASIC
-                }
-                else {
-                    val t = Random.nextDouble()
-                    
-                    when {
-                        t < 1.0 / 2.0 -> Gem.Type.TEN_SECOND
-                        t < 5.0 / 6.0 -> Gem.Type.TWENTY_SECOND
-                        else          -> Gem.Type.THIRTY_SECOND
-                    }
-                }
-                
-                return Gem(x, y, color, type)
-            }
+            override fun getRandomStartGem(x: Double, y: Double) =
+                Gem(x, y, Gem.Color.random(), Gem.Type.BASIC)
             
             override fun getRandomGem(x: Double, y: Double): Gem {
                 val color = Gem.Color.random()
     
-                val type = if (Random.nextDouble() < 0.75) {
+                val type = if (Random.nextDouble() < 0.95) {
                     Gem.Type.BASIC
                 }
                 else {

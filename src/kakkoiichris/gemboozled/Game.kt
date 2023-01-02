@@ -386,7 +386,7 @@ class Game(val gameMode: GameMode) : State {
             renderer.color = Colors.white
             renderer.font = Font(Resources.font, Font.PLAIN, BORDER * 4)
             
-            renderer.drawString("GAME OVER", view.bounds)
+            renderer.drawString("GAME OVER", view.bounds, yAlign = 0.05)
         }
     }
     
@@ -417,7 +417,7 @@ class Game(val gameMode: GameMode) : State {
                 
                 val gem = getter(
                     (column * Gem.SIZE).toDouble() + boardBox.x,
-                    (row * Gem.SIZE).toDouble() + boardBox.y - boardBox.height
+                    (row * Gem.SIZE).toDouble() + boardBox.y
                 )
                 
                 gem.falling = true
