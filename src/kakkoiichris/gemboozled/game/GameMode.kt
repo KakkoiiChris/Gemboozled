@@ -1,4 +1,4 @@
-package kakkoiichris.gemboozled
+package kakkoiichris.gemboozled.game
 
 import kotlin.random.Random
 
@@ -39,20 +39,20 @@ interface GameMode {
             
             override fun getRandomGem(x: Double, y: Double): Gem {
                 val color = Gem.Color.random()
-    
+                
                 val type = if (Random.nextDouble() < 0.95) {
                     Gem.Type.BASIC
                 }
                 else {
                     val t = Random.nextDouble()
-        
+                    
                     when {
                         t < 1.0 / 2.0 -> Gem.Type.TEN_SECOND
                         t < 5.0 / 6.0 -> Gem.Type.TWENTY_SECOND
                         else          -> Gem.Type.THIRTY_SECOND
                     }
                 }
-    
+                
                 return Gem(x, y, color, type)
             }
         },
@@ -92,5 +92,11 @@ interface GameMode {
                 return Gem(x, y, color, type)
             }
         }
+    }
+    
+    class Custom(override val modeName: String, override val time: Double, override val boardSize: Int) : GameMode {
+        override fun getRandomStartGem(x: Double, y: Double) = Gem(x, y, Gem.Color.WHITE, Gem.Type.BASIC)
+        
+        override fun getRandomGem(x: Double, y: Double) = Gem(x, y, Gem.Color.WHITE, Gem.Type.BASIC)
     }
 }

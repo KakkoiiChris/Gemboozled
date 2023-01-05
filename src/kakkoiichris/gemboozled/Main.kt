@@ -1,5 +1,8 @@
 package kakkoiichris.gemboozled
 
+import kakkoiichris.gemboozled.game.Game
+import kakkoiichris.gemboozled.game.GameMode
+import kakkoiichris.gemboozled.game.Gem
 import kakkoiichris.hypergame.view.Display
 
 /**
@@ -21,7 +24,7 @@ fun main() {
     
     val display = Display(width, height, title = "Gemboozled", icon = Resources.icon)
     
-    display.manager += Game(GameMode.Builtin.CLASSIC)
+    display.manager += Game(GameMode.Builtin.CHAOS)
     
     display.open()
 }

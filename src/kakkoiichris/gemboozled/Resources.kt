@@ -1,5 +1,6 @@
 package kakkoiichris.gemboozled
 
+import kakkoiichris.gemboozled.game.Gem
 import kakkoiichris.hypergame.media.Animation
 import kakkoiichris.hypergame.media.Sprite
 import kakkoiichris.hypergame.media.SpriteSheet
@@ -8,6 +9,8 @@ import kakkoiichris.hypergame.util.filesystem.ResourceManager
 // Christian Alexander, 12/29/2022
 object Resources {
     val icon: Sprite
+    
+    val background:Sprite
     
     val gems: SpriteSheet
     
@@ -28,7 +31,9 @@ object Resources {
         
         icon = images.getSprite("icon")
         
-        val gemsSprite = images.getSprite("gems")
+        background = images.getSprite("arcade_carpet_512")
+        
+        val gemsSprite = images.getSprite("gemsFlat")
         
         gems = SpriteSheet(gemsSprite, Gem.SIZE, Gem.SIZE)
         

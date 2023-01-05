@@ -1,5 +1,6 @@
-package kakkoiichris.gemboozled
+package kakkoiichris.gemboozled.game
 
+import kakkoiichris.gemboozled.Resources
 import kakkoiichris.hypergame.input.Input
 import kakkoiichris.hypergame.media.Renderable
 import kakkoiichris.hypergame.media.Renderer
@@ -8,6 +9,7 @@ import kakkoiichris.hypergame.util.Time
 import kakkoiichris.hypergame.util.math.Box
 import kakkoiichris.hypergame.util.math.Vector
 import kakkoiichris.hypergame.view.View
+import kotlin.math.abs
 import kotlin.random.Random
 
 
@@ -23,7 +25,7 @@ import kotlin.random.Random
  * @author Christian Bryce Alexander
  */
 class Gem(x: Double, y: Double, val color: Color, val type: Type) : Box(x, y, SIZE.toDouble(), SIZE.toDouble()), Renderable {
-    private val acceleration = Vector(0.0, 0.1)
+    private val acceleration = Vector(0.0, 0.15)
     private var velocity = Vector()
     
     private val sizeOffset get() = if (hovering) 16.0 else 0.0
@@ -45,12 +47,15 @@ class Gem(x: Double, y: Double, val color: Color, val type: Type) : Box(x, y, SI
     
     fun remove() {
         removed = true
+        
         falling = false
+        
         velocity.zero()
     }
     
     fun halt() {
         falling = false
+        
         velocity *= 0.0
     }
     
@@ -157,5 +162,8 @@ class Gem(x: Double, y: Double, val color: Color, val type: Type) : Box(x, y, SI
             manhattanDistance(ra, ca, rb, cb) == 1
         
         open fun affectGame(row: Int, column: Int, color: Color, game: Game) = Unit
+    
+        protected fun manhattanDistance(ra: Int, ca: Int, rb: Int, cb: Int) =
+            abs(ra - rb) + abs(ca - cb)
     }
 }
