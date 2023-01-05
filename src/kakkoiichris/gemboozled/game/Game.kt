@@ -1,5 +1,10 @@
-package kakkoiichris.gemboozled
+package kakkoiichris.gemboozled.game
 
+import kakkoiichris.gemboozled.Resources
+import kakkoiichris.gemboozled.game.particles.Explosion
+import kakkoiichris.gemboozled.game.particles.Particle
+import kakkoiichris.gemboozled.game.particles.Points
+import kakkoiichris.gemboozled.game.particles.X
 import kakkoiichris.hypergame.input.Button
 import kakkoiichris.hypergame.input.Input
 import kakkoiichris.hypergame.input.Key
@@ -11,6 +16,7 @@ import kakkoiichris.hypergame.util.Time
 import kakkoiichris.hypergame.util.math.Box
 import kakkoiichris.hypergame.util.math.Vector
 import kakkoiichris.hypergame.util.math.easing.Path
+import kakkoiichris.hypergame.util.math.tween
 import kakkoiichris.hypergame.view.View
 import java.awt.BasicStroke
 import java.awt.Color
@@ -51,6 +57,7 @@ class Game(val gameMode: GameMode) : State {
     private var timePaused = true
     
     private var score = 0
+    private var displayedScore = 0.0
     
     private var combo = 0
     private var lastCombo = 0
@@ -59,12 +66,17 @@ class Game(val gameMode: GameMode) : State {
     private var state = GameState.START
     private var waitTime = 0.0
     
+    
+    private val clearBlack = Color(0, 0, 0, 191)
+    private val clearWhite = Color(255, 255, 255, 63)
     private var hue = 0.0
     
     override val name = ID
     
     init {
         fillOffBoard(gameMode::getRandomStartGem)
+        
+        constrainOffBoard()
         
         val (a, b, c) = statsBox.divide(3, 1)
         
@@ -99,6 +111,8 @@ class Game(val gameMode: GameMode) : State {
             state = GameState.GAME_OVER
         }
         
+        displayedScore = displayedScore.tween(score.toDouble(), 0.1, 0.5)
+        
         when (state) {
             GameState.START         -> {
                 gemFall(view, manager, time, input)
@@ -112,7 +126,7 @@ class Game(val gameMode: GameMode) : State {
             
             GameState.SELECT_FIRST  -> {
                 for (gem in gems) {
-                    if (input.mouse in gem) {
+                    if (input.mouse in boardBox && input.mouse in gem) {
                         gemHover?.hovering = false
                         
                         gemHover = gem
@@ -134,7 +148,7 @@ class Game(val gameMode: GameMode) : State {
             
             GameState.SELECT_SECOND -> {
                 for (gem in gems) {
-                    if (input.mouse in gem) {
+                    if (input.mouse in boardBox && input.mouse in gem) {
                         gemHover?.hovering = false
                         
                         gemHover = gem
@@ -182,7 +196,7 @@ class Game(val gameMode: GameMode) : State {
             GameState.SELECT_WAIT   -> {
                 waitTime += time.seconds
                 
-                if (waitTime < 0.25) return
+                if (waitTime < 0.3) return
                 
                 state = GameState.SWAP
             }
@@ -243,7 +257,11 @@ class Game(val gameMode: GameMode) : State {
                     combo++
                     
                     for (gem in scoredGems) {
-                        score += gem.type.score * (2.0.pow(combo - 1)).toInt()
+                        val points = gem.type.score * (2.0.pow(combo - 1)).toInt()
+                        
+                        score += points
+                        
+                        particles += Points(gem.position, points)
                     }
                     
                     scoredGems.clear()
@@ -285,7 +303,19 @@ class Game(val gameMode: GameMode) : State {
             GameState.FALL          -> {
                 gemFall(view, manager, time, input)
                 
-                if (gems.none { it.falling }) state = GameState.MATCH
+                if (gems.none { it.falling }) {
+                    waitTime = 0.0
+                    
+                    state = GameState.FALL_WAIT
+                }
+            }
+            
+            GameState.FALL_WAIT     -> {
+                waitTime += time.seconds
+                
+                if (waitTime < 0.3) return
+                
+                state = GameState.MATCH
             }
             
             GameState.GAME_OVER     -> {
@@ -294,6 +324,8 @@ class Game(val gameMode: GameMode) : State {
                 gems.clear()
                 
                 fillOffBoard(gameMode::getRandomStartGem)
+                
+                constrainOffBoard()
                 
                 score = 0
                 
@@ -310,21 +342,23 @@ class Game(val gameMode: GameMode) : State {
     }
     
     override fun render(view: View, renderer: Renderer) {
-        renderer.color = Colors.black
-        renderer.fill(view.bounds.rectangle)
+        for (y in 0..(view.height / Resources.background.height)) {
+            for (x in 0..(view.width / Resources.background.width)) {
+                renderer.drawImage(Resources.background, x * Resources.background.width, y * Resources.background.height)
+            }
+        }
         
-        renderer.color = Color(255, 255, 255, 63)
+        renderer.color = clearBlack
         
         renderer.fillRoundRect(titleBox, 8, 8)
-        renderer.fillRoundRect(timeBox, 8, 8)
-        renderer.fillRoundRect(comboBox, 8, 8)
+        renderer.fillRoundRect(statsBox, 8, 8)
         
         renderer.push()
         renderer.clip = boardBox.rectangle
         
         for (row in 0 until gameMode.boardSize) {
             for (column in 0 until gameMode.boardSize) {
-                if ((row + column) % 2 == 0) continue
+                renderer.color = if ((row + column) % 2 == 0) clearBlack else clearWhite
                 
                 renderer.fillRect((column * Gem.SIZE) + boardBox.x.toInt(), (row * Gem.SIZE) + boardBox.y.toInt(), Gem.SIZE, Gem.SIZE)
             }
@@ -332,9 +366,9 @@ class Game(val gameMode: GameMode) : State {
         
         gems.forEach { it.render(view, renderer) }
         
-        particles.forEach { it.render(view, renderer) }
-        
         renderer.pop()
+        
+        particles.forEach { it.render(view, renderer) }
         
         if (state === GameState.SELECT_SECOND) {
             renderer.drawAnimation(Resources.select, gemFirst.center - 32.0)
@@ -346,13 +380,14 @@ class Game(val gameMode: GameMode) : State {
             renderer.drawAnimation(Resources.select, gemSecond.center - 32.0)
         }
         
-        renderer.color = Colors.white
+        renderer.color = Color(Color.HSBtoRGB(hue.toFloat(), 0.5F, 1F))
         renderer.stroke = BasicStroke(2F)
         
         renderer.drawRoundRect(titleBox, 8, 8)
         renderer.drawRoundRect(boardBox, 8, 8)
         renderer.drawRoundRect(statsBox, 8, 8)
         
+        renderer.color = Colors.white
         renderer.font = Font(Resources.font, Font.PLAIN, BORDER * 3 / 2)
         
         renderer.drawString("Gemboozled ${gameMode.modeName}!", titleBox)
@@ -368,7 +403,7 @@ class Game(val gameMode: GameMode) : State {
         renderer.drawString("TIME", timeBox, xAlign = 0.0)
         renderer.drawString(timeString, timeBox, xAlign = 1.0)
         
-        val scoreString = "%,d".format(score)
+        val scoreString = "%,d".format(displayedScore.toInt())
         
         renderer.drawString("SCORE", scoreBox, xAlign = 0.0)
         renderer.drawString(scoreString, scoreBox, xAlign = 1.0)
@@ -379,7 +414,7 @@ class Game(val gameMode: GameMode) : State {
         renderer.drawString(comboString, comboBox, xAlign = 1.0)
         
         if (state == GameState.GAME_OVER) {
-            renderer.color = Color(0, 0, 0, 191)
+            renderer.color = clearBlack
             
             renderer.fillRect(view.bounds)
             
@@ -427,12 +462,45 @@ class Game(val gameMode: GameMode) : State {
         }
     }
     
+    private fun constrainOffBoard() {
+        generateGrid()
+        
+        for (row in -gameMode.boardSize until 0) {
+            for (column in 0 until gameMode.boardSize) {
+                val gem = get(row, column)!!
+                
+                val colorCenter = gem.color
+                val colorUp = if (row - 1 >= 0) get(row - 1, column)?.color else null
+                val colorDown = if (row + 1 < gameMode.boardSize) get(row + 1, column)?.color else null
+                val colorLeft = if (column - 1 >= 0) get(row, column - 1)?.color else null
+                val colorRight = if (column + 1 < gameMode.boardSize) get(row, column + 1)?.color else null
+                
+                if (colorUp == colorCenter && colorCenter == colorDown || colorLeft == colorCenter && colorCenter == colorRight) {
+                    var newColor: Gem.Color
+                    
+                    do {
+                        newColor = Gem.Color.random()
+                    }
+                    while (newColor == colorCenter)
+                    
+                    val newGem = Gem(gem.x, gem.y, newColor, gem.type)
+                    newGem.falling = gem.falling
+                    
+                    val index = gems.indexOf(gem)
+                    
+                    gems.removeAt(index)
+                    gems.add(index, newGem)
+                    
+                    set(row, column, newGem)
+                }
+            }
+        }
+    }
+    
     private fun gemFall(view: View, manager: StateManager, time: Time, input: Input) {
-        val steps = 10
+        val newTime = time / PHYSICS_STEPS
         
-        val newTime = time / steps * 0.95
-        
-        repeat(steps) {
+        repeat(PHYSICS_STEPS) {
             for (gem in gems) {
                 gem.update(view, manager, newTime, input)
             }
@@ -479,6 +547,10 @@ class Game(val gameMode: GameMode) : State {
     
     private fun get(row: Int, column: Int) =
         grid[getCoordsString(row, column)]
+    
+    private fun set(row: Int, column: Int, gem: Gem) {
+        grid[getCoordsString(row, column)] = gem
+    }
     
     private fun validateMatch(row: Int, column: Int): Boolean {
         val colorCenter = get(row, column)!!.color
@@ -665,6 +737,7 @@ class Game(val gameMode: GameMode) : State {
     companion object {
         const val ID = "game"
         const val BORDER = 25
+        const val PHYSICS_STEPS = 8
     }
     
     enum class GameState {
@@ -678,6 +751,7 @@ class Game(val gameMode: GameMode) : State {
         MATCH,
         RETURN,
         FALL,
+        FALL_WAIT,
         GAME_OVER
     }
 }

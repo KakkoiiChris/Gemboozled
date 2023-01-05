@@ -1,4 +1,4 @@
-package kakkoiichris.gemboozled
+package kakkoiichris.gemboozled.game.particles
 
 import kakkoiichris.hypergame.media.Renderable
 import kakkoiichris.hypergame.util.math.Vector

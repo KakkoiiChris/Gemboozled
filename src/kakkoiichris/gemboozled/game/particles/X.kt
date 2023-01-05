@@ -1,5 +1,6 @@
-package kakkoiichris.gemboozled
+package kakkoiichris.gemboozled.game.particles
 
+import kakkoiichris.gemboozled.Resources
 import kakkoiichris.hypergame.input.Input
 import kakkoiichris.hypergame.media.Renderer
 import kakkoiichris.hypergame.state.StateManager
