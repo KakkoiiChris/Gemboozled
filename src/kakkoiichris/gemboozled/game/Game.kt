@@ -78,11 +78,11 @@ class Game(val gameMode: GameMode) : State {
         
         constrainOffBoard()
         
-        val (a, b, c) = statsBox.divide(3, 1)
+        val (a, b, c) = statsBox.divide(3, 1).map { it.resized(BORDER * -2.0) }
         
-        timeBox = a.resized(BORDER * -2.0)
-        scoreBox = b.resized(BORDER * -2.0)
-        comboBox = c.resized(BORDER * -2.0)
+        timeBox = a
+        scoreBox = b
+        comboBox = c
     }
     
     override fun swapTo(view: View, passed: List<Any>) {
@@ -659,7 +659,7 @@ class Game(val gameMode: GameMode) : State {
             if (gem?.color == color) {
                 removeGem(gem)
                 
-                gem.affectGame(i, c, this)
+                gem.affectGame(this, i, c)
             }
             else {
                 break
@@ -672,7 +672,7 @@ class Game(val gameMode: GameMode) : State {
             if (gem?.color == color) {
                 removeGem(gem)
                 
-                gem.affectGame(i, c, this)
+                gem.affectGame(this, i, c)
             }
             else {
                 break
@@ -687,7 +687,7 @@ class Game(val gameMode: GameMode) : State {
             if (gem?.color == color) {
                 removeGem(gem)
                 
-                gem.affectGame(row, i, this)
+                gem.affectGame(this, row, i)
             }
             else {
                 break
@@ -700,7 +700,7 @@ class Game(val gameMode: GameMode) : State {
             if (gem?.color == color) {
                 removeGem(gem)
                 
-                gem.affectGame(row, i, this)
+                gem.affectGame(this, row, i)
             }
             else {
                 break

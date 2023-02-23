@@ -59,8 +59,8 @@ class Gem(x: Double, y: Double, val color: Color, val type: Type) : Box(x, y, SI
         velocity *= 0.0
     }
     
-    fun affectGame(row: Int, column: Int, game: Game) =
-        type.affectGame(row, column, color, game)
+    fun affectGame(game: Game, row: Int, column: Int) =
+        type.affectGame(game, row, column, color)
     
     companion object {
         const val SIZE = 51
@@ -79,7 +79,7 @@ class Gem(x: Double, y: Double, val color: Color, val type: Type) : Box(x, y, SI
         BASIC,
         
         CROSS {
-            override fun affectGame(row: Int, column: Int, color: Color, game: Game) {
+            override fun affectGame(game: Game, row: Int, column: Int, color: Color) {
                 for (i in 0 until game.gameMode.boardSize) {
                     game.removeAt(row, i)
                     game.removeAt(i, column)
@@ -88,7 +88,7 @@ class Gem(x: Double, y: Double, val color: Color, val type: Type) : Box(x, y, SI
         },
         
         EXPLODE {
-            override fun affectGame(row: Int, column: Int, color: Color, game: Game) {
+            override fun affectGame(game: Game, row: Int, column: Int, color: Color) {
                 for (rowOffset in -2..2) {
                     val actualRow = row + rowOffset
                     
@@ -108,13 +108,13 @@ class Gem(x: Double, y: Double, val color: Color, val type: Type) : Box(x, y, SI
         },
         
         SOLE {
-            override fun affectGame(row: Int, column: Int, color: Color, game: Game) {
+            override fun affectGame(game: Game, row: Int, column: Int, color: Color) {
                 game.removeIf { gem -> color === gem.color }
             }
         },
         
         SCATTER {
-            override fun affectGame(row: Int, column: Int, color: Color, game: Game) {
+            override fun affectGame(game: Game, row: Int, column: Int, color: Color) {
                 repeat(15) {
                     var rr: Int
                     var cc: Int
@@ -139,19 +139,19 @@ class Gem(x: Double, y: Double, val color: Color, val type: Type) : Box(x, y, SI
         },
         
         TEN_SECOND {
-            override fun affectGame(row: Int, column: Int, color: Color, game: Game) {
+            override fun affectGame(game: Game, row: Int, column: Int, color: Color) {
                 game.gameTime += 10
             }
         },
         
         TWENTY_SECOND {
-            override fun affectGame(row: Int, column: Int, color: Color, game: Game) {
+            override fun affectGame(game: Game, row: Int, column: Int, color: Color) {
                 game.gameTime += 20
             }
         },
         
         THIRTY_SECOND {
-            override fun affectGame(row: Int, column: Int, color: Color, game: Game) {
+            override fun affectGame(game: Game, row: Int, column: Int, color: Color) {
                 game.gameTime += 30
             }
         };
@@ -161,7 +161,7 @@ class Gem(x: Double, y: Double, val color: Color, val type: Type) : Box(x, y, SI
         open fun allowMove(ra: Int, ca: Int, rb: Int, cb: Int) =
             manhattanDistance(ra, ca, rb, cb) == 1
         
-        open fun affectGame(row: Int, column: Int, color: Color, game: Game) = Unit
+        open fun affectGame(game: Game, row: Int, column: Int, color: Color) = Unit
     
         protected fun manhattanDistance(ra: Int, ca: Int, rb: Int, cb: Int) =
             abs(ra - rb) + abs(ca - cb)
