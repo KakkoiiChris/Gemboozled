@@ -19,17 +19,17 @@ import kakkoiichris.hypergame.view.View
  *
  * @author Christian Bryce Alexander
  */
-class Explosion(position:Vector) : Particle(position) {
+class Explosion(position: Vector) : Particle(position) {
     private val animation = Resources.explosion.copy()
-    
+
     override fun update(view: View, manager: StateManager, time: Time, input: Input) {
         animation.update(time)
-        
+
         if (animation.elapsed) {
             removed = true
         }
     }
-    
+
     override fun render(view: View, renderer: Renderer) {
         renderer.drawAnimation(animation, position - (animation.frame.size / 2.0))
     }

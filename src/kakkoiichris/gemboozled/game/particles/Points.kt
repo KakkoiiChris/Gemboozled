@@ -25,25 +25,25 @@ import java.awt.Font
  */
 class Points(position: Vector, private val points: Int) : Particle(position) {
     private val targetY = position.y - Gem.SIZE / 2.0
-    
+
     override fun update(view: View, manager: StateManager, time: Time, input: Input) {
         position.y = position.y.tween(targetY, 0.1, 0.5)
-        
+
         if (position.y == targetY) {
             removed = true
         }
     }
-    
+
     override fun render(view: View, renderer: Renderer) {
         renderer.setXORMode(Color.white)
-        
+
         renderer.font = font
-        
+
         renderer.drawString("+$points", position)
-        
+
         renderer.setPaintMode()
     }
-    
+
     companion object {
         val font = Font(Resources.font, Font.PLAIN, 24)
     }

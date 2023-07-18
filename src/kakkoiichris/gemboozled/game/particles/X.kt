@@ -22,22 +22,22 @@ import java.awt.AlphaComposite
  */
 class X(position: Vector) : Particle(position) {
     private var alpha = 1.0
-    
+
     override fun update(view: View, manager: StateManager, time: Time, input: Input) {
         alpha -= time.delta * 0.05
-        
+
         if (alpha <= 0.0) {
             removed = true
         }
     }
-    
+
     override fun render(view: View, renderer: Renderer) {
         renderer.push()
-        
+
         renderer.composite = AlphaComposite.getInstance(AlphaComposite.SRC_OVER, alpha.toFloat())
-        
+
         renderer.drawImage(Resources.x, position - (Resources.x.size / 2.0))
-        
+
         renderer.pop()
     }
 }

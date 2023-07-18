@@ -284,39 +284,39 @@ class Game(val gameMode: GameMode) : State {
             state = GameState.SELECT_FIRST
         }
 
-        if (clearRemovedGems()) {
-            combo++
+        if (!clearRemovedGems()) return
 
-            for (gem in scoredGems) {
-                val points = gem.type.score * (2.0.pow(combo - 1)).toInt()
+        combo++
 
-                score += points
+        for (gem in scoredGems) {
+            val points = gem.type.score * (2.0.pow(combo - 1)).toInt()
 
-                particles += Points(gem.position, points)
-            }
+            score += points
 
-            scoredGems.clear()
-
-            gems.removeIf(Gem::removed)
-
-            generateGrid()
-
-            for (gem in gems.sortedByDescending { it.y }) {
-                val (row, column) = getCoords(gem)
-
-                if (row == gameMode.boardSize - 1) continue
-
-                val other = get(row + 1, column)
-
-                if (other == null || other.falling) {
-                    gem.falling = true
-                }
-            }
-
-            fillOffBoard(gameMode::getRandomGem)
-
-            state = GameState.FALL
+            particles += Points(gem.position, points)
         }
+
+        scoredGems.clear()
+
+        gems.removeIf(Gem::removed)
+
+        generateGrid()
+
+        for (gem in gems.sortedByDescending { it.y }) {
+            val (row, column) = getCoords(gem)
+
+            if (row == gameMode.boardSize - 1) continue
+
+            val other = get(row + 1, column)
+
+            if (other == null || other.falling) {
+                gem.falling = true
+            }
+        }
+
+        fillOffBoard(gameMode::getRandomGem)
+
+        state = GameState.FALL
     }
 
     private fun updateReturn(time: Time) {
@@ -334,11 +334,11 @@ class Game(val gameMode: GameMode) : State {
     private fun updateFall(view: View, manager: StateManager, time: Time, input: Input) {
         gemFall(view, manager, time, input)
 
-        if (gems.none { it.falling }) {
-            waitTime = 0.0
+        if (gems.any { it.falling }) return
 
-            state = GameState.FALL_WAIT
-        }
+        waitTime = 0.0
+
+        state = GameState.FALL_WAIT
     }
 
     private fun updateFallWait(time: Time) {
@@ -513,24 +513,22 @@ class Game(val gameMode: GameMode) : State {
                 val colorLeft = if (column - 1 >= 0) get(row, column - 1)?.color else null
                 val colorRight = if (column + 1 < gameMode.boardSize) get(row, column + 1)?.color else null
 
-                if (colorUp == colorCenter && colorCenter == colorDown || colorLeft == colorCenter && colorCenter == colorRight) {
-                    var newColor: Gem.Color
+                val vertical = colorUp == colorCenter && colorCenter == colorDown
+                val horizontal = colorLeft == colorCenter && colorCenter == colorRight
 
-                    do {
-                        newColor = Gem.Color.random()
-                    }
-                    while (newColor == colorCenter)
+                if (!(vertical || horizontal)) continue
 
-                    val newGem = Gem(gem.x, gem.y, newColor, gem.type)
-                    newGem.falling = gem.falling
+                val newColor = colorCenter.next
 
-                    val index = gems.indexOf(gem)
+                val newGem = Gem(gem.x, gem.y, newColor, gem.type)
+                newGem.falling = gem.falling
 
-                    gems.removeAt(index)
-                    gems.add(index, newGem)
+                val index = gems.indexOf(gem)
 
-                    set(row, column, newGem)
-                }
+                gems.removeAt(index)
+                gems.add(index, newGem)
+
+                set(row, column, newGem)
             }
         }
     }
