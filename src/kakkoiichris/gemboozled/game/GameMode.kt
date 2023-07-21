@@ -92,6 +92,19 @@ interface GameMode {
 
                 return Gem(x, y, color, type)
             }
+        },
+
+        BONUS_RUSH("Bonus Rush", 120.0, 10) {
+            override fun getRandomStartGem(x: Double, y: Double) =
+                Gem(x, y, Gem.Color.random(), Gem.Type.BASIC)
+
+            override fun getRandomGem(x: Double, y: Double): Gem {
+                val color = Gem.Color.random()
+
+                val type = if (Random.nextDouble() < 0.5) Gem.Type.BASIC else Gem.Type.BONUS
+
+                return Gem(x, y, color, type)
+            }
         }
     }
 

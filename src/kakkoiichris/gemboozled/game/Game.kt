@@ -28,12 +28,14 @@ import kotlin.math.pow
 class Game(val gameMode: GameMode) : State {
     private val titleBox =
         Box(BORDER.toDouble(), BORDER.toDouble(), (Gem.SIZE * gameMode.boardSize).toDouble(), BORDER * 2.0)
+
     private val boardBox = Box(
         BORDER.toDouble(),
         titleBox.bottom + BORDER,
         (Gem.SIZE * gameMode.boardSize).toDouble(),
         (Gem.SIZE * gameMode.boardSize).toDouble()
     )
+
     private val statsBox =
         Box(BORDER.toDouble(), boardBox.bottom + BORDER, (Gem.SIZE * gameMode.boardSize).toDouble(), BORDER * 4.0)
 
@@ -73,12 +75,9 @@ class Game(val gameMode: GameMode) : State {
     private var state = GameState.START
     private var waitTime = 0.0
 
-
     private val clearBlack = Color(0, 0, 0, 191)
     private val clearWhite = Color(255, 255, 255, 63)
     private var hue = 0.0
-
-    override val name = ID
 
     init {
         fillOffBoard(gameMode::getRandomStartGem)
@@ -92,7 +91,7 @@ class Game(val gameMode: GameMode) : State {
         comboBox = c
     }
 
-    override fun swapTo(view: View, passed: List<Any>) {
+    override fun swapTo(view: View) {
     }
 
     override fun swapFrom(view: View) {
@@ -771,7 +770,6 @@ class Game(val gameMode: GameMode) : State {
     }
 
     companion object {
-        const val ID = "game"
         const val BORDER = 25
         const val PHYSICS_STEPS = 8
     }
