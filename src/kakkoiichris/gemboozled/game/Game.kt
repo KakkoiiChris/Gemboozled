@@ -1,6 +1,8 @@
 package kakkoiichris.gemboozled.game
 
+import kakkoiichris.gemboozled.Background
 import kakkoiichris.gemboozled.Resources
+import kakkoiichris.gemboozled.TextBox
 import kakkoiichris.gemboozled.game.particles.Explosion
 import kakkoiichris.gemboozled.game.particles.Particle
 import kakkoiichris.gemboozled.game.particles.Points
@@ -26,6 +28,10 @@ import kotlin.math.pow
 
 // Christian Alexander, 12/28/2022
 class Game(val gameMode: GameMode) : State {
+    private val background = Background(Resources.background)
+
+    private lateinit var header: TextBox
+
     private val titleBox =
         Box(BORDER.toDouble(), BORDER.toDouble(), (Gem.SIZE * gameMode.boardSize).toDouble(), BORDER * 2.0)
 
@@ -75,8 +81,6 @@ class Game(val gameMode: GameMode) : State {
     private var state = GameState.START
     private var waitTime = 0.0
 
-    private val clearBlack = Color(0, 0, 0, 191)
-    private val clearWhite = Color(255, 255, 255, 63)
     private var hue = 0.0
 
     init {
@@ -92,12 +96,20 @@ class Game(val gameMode: GameMode) : State {
     }
 
     override fun swapTo(view: View) {
+        val headerBox = view.bounds.resized(-BORDER * 2.0).copy(height = BORDER * 2.0)
+        val headerFont = Font(Resources.font, Font.PLAIN, BORDER * 3 / 2)
+
+        header = TextBox(headerBox, gameMode.modeName, headerFont)
     }
 
     override fun swapFrom(view: View) {
     }
 
     override fun update(view: View, manager: StateManager, time: Time, input: Input) {
+        background.update(view, manager, time, input)
+
+        header.update(view, manager, time, input)
+
         if (particles.isNotEmpty()) {
             particles.forEach { it.update(view, manager, time, input) }
 
@@ -105,8 +117,6 @@ class Game(val gameMode: GameMode) : State {
         }
 
         Resources.select.update(time)
-
-        hue += time.delta * 0.005
 
         if (!timePaused) {
             gameTime -= time.seconds
@@ -142,7 +152,7 @@ class Game(val gameMode: GameMode) : State {
 
             GameState.FALL_WAIT     -> updateFallWait(time)
 
-            GameState.GAME_OVER     -> updateGameOver(input)
+            GameState.GAME_OVER     -> updateGameOver(manager, input)
         }
     }
 
@@ -348,8 +358,10 @@ class Game(val gameMode: GameMode) : State {
         state = GameState.MATCH
     }
 
-    private fun updateGameOver(input: Input) {
-        if (!input.keyDown(Key.ESCAPE)) return
+    private fun updateGameOver(manager: StateManager, input: Input) {
+        if (input.keyDown(Key.ESCAPE)) manager.pop()
+
+        if (!input.keyDown(Key.SPACE)) return
 
         gems.clear()
 
@@ -370,19 +382,12 @@ class Game(val gameMode: GameMode) : State {
     }
 
     override fun render(view: View, renderer: Renderer) {
-        for (y in 0..(view.height / Resources.background.height)) {
-            for (x in 0..(view.width / Resources.background.width)) {
-                renderer.drawImage(
-                    Resources.background,
-                    x * Resources.background.width,
-                    y * Resources.background.height
-                )
-            }
-        }
+        background.render(view, renderer)
 
-        renderer.color = clearBlack
+        header.render(view, renderer)
 
-        renderer.fillRoundRect(titleBox, 8, 8)
+        renderer.color = Resources.clearBlack
+
         renderer.fillRoundRect(statsBox, 8, 8)
 
         renderer.push()
@@ -390,7 +395,7 @@ class Game(val gameMode: GameMode) : State {
 
         for (row in 0 until gameMode.boardSize) {
             for (column in 0 until gameMode.boardSize) {
-                renderer.color = if ((row + column) % 2 == 0) clearBlack else clearWhite
+                renderer.color = if ((row + column) % 2 == 0) Resources.clearBlack else Resources.clearWhite
 
                 renderer.fillRect(
                     (column * Gem.SIZE) + boardBox.x.toInt(),
@@ -420,14 +425,11 @@ class Game(val gameMode: GameMode) : State {
         renderer.color = Color(Color.HSBtoRGB(hue.toFloat(), 0.5F, 1F))
         renderer.stroke = BasicStroke(2F)
 
-        renderer.drawRoundRect(titleBox, 8, 8)
         renderer.drawRoundRect(boardBox, 8, 8)
         renderer.drawRoundRect(statsBox, 8, 8)
 
         renderer.color = Colors.white
         renderer.font = Font(Resources.font, Font.PLAIN, BORDER * 3 / 2)
-
-        renderer.drawString("Gemboozled ${gameMode.modeName}!", titleBox)
 
         renderer.font = Font(Resources.font, Font.PLAIN, BORDER)
 
@@ -451,7 +453,7 @@ class Game(val gameMode: GameMode) : State {
         renderer.drawString(comboString, comboBox, xAlign = 1.0)
 
         if (state == GameState.GAME_OVER) {
-            renderer.color = clearBlack
+            renderer.color = Resources.clearBlack
 
             renderer.fillRect(view.bounds)
 
@@ -562,10 +564,10 @@ class Game(val gameMode: GameMode) : State {
         }
     }
 
-    private fun generateGrid() {
-        grid.clear()
+    private fun generateGrid() = grid.apply {
+        clear()
 
-        grid.putAll(gems.associateBy(::getCoordsString))
+        putAll(gems.associateBy(::getCoordsString))
     }
 
     private fun getCoords(gem: Gem) =
@@ -696,9 +698,7 @@ class Game(val gameMode: GameMode) : State {
 
                 gem.affectGame(this, i, c)
             }
-            else {
-                break
-            }
+            else break
         }
 
         for (i in r + 1 until gameMode.boardSize) {
@@ -709,9 +709,7 @@ class Game(val gameMode: GameMode) : State {
 
                 gem.affectGame(this, i, c)
             }
-            else {
-                break
-            }
+            else break
         }
     }
 
@@ -724,9 +722,7 @@ class Game(val gameMode: GameMode) : State {
 
                 gem.affectGame(this, row, i)
             }
-            else {
-                break
-            }
+            else break
         }
 
         for (i in column + 1 until gameMode.boardSize) {
@@ -737,9 +733,7 @@ class Game(val gameMode: GameMode) : State {
 
                 gem.affectGame(this, row, i)
             }
-            else {
-                break
-            }
+            else break
         }
     }
 

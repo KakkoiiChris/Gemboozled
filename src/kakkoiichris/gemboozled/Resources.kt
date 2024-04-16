@@ -5,6 +5,7 @@ import kakkoiichris.hypergame.media.Animation
 import kakkoiichris.hypergame.media.Sprite
 import kakkoiichris.hypergame.media.SpriteSheet
 import kakkoiichris.hypergame.util.filesystem.ResourceManager
+import java.awt.Color
 
 // Christian Alexander, 12/29/2022
 object Resources {
@@ -21,6 +22,9 @@ object Resources {
     val explosion: Animation
 
     val font: String
+
+    val clearBlack = Color(0, 0, 0, 191)
+    val clearWhite = Color(255, 255, 255, 63)
 
     init {
         val manager = ResourceManager("/resources")

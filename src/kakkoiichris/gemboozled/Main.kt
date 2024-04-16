@@ -24,7 +24,7 @@ fun main() {
 
     val display = Display(width, height, title = "Gemboozled", icon = Resources.icon)
 
-    display.manager.push(Game(GameMode.Builtin.BONUS_RUSH))
+    display.manager.push(Menu)
 
     display.open()
 }
