@@ -13,7 +13,7 @@ import kotlin.math.sin
 
 class Background(private val image: BufferedImage) : Renderable {
     private var position = Vector()
-    private var direction = Vector(y = -0.2)
+    private var direction = Vector(y = -0.5)
 
     private var deltaAngle = 0.0
 
@@ -26,16 +26,16 @@ class Background(private val image: BufferedImage) : Renderable {
         deltaAngle += PI / 128
     }
 
-    override fun render(view: View, renderer: Renderer) {
-        val (ox, oy) = position
+    override fun render(view: View, renderer: Renderer) = renderer.withState {
+        translate(view.bounds.center)
 
-        for (y in 0..(view.height / Resources.background.height) + 1) {
-            for (x in -1..(view.width / Resources.background.width)) {
-                renderer.drawImage(
-                    image,
-                    ((x * image.width) + ox).toInt(),
-                    ((y * image.height) + oy).toInt()
-                )
+        rotate(sin(deltaAngle * 0.25) * 0.25)
+
+        translate(position)
+
+        for (ty in -2..2) {
+            for (tx in -2..<2) {
+                drawImage(image, tx * image.width, ty * image.height)
             }
         }
     }

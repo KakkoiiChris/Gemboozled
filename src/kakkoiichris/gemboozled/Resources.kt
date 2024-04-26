@@ -37,7 +37,7 @@ object Resources {
 
         background = images.getSprite("arcade_carpet_512")
 
-        val gemsSprite = images.getSprite("gemsFlat")
+        val gemsSprite = images.getSprite("gems")
 
         gems = SpriteSheet(gemsSprite, Gem.SIZE, Gem.SIZE)
 
