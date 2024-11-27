@@ -43,7 +43,7 @@ class Gem(x: Double, y: Double, val color: Color, val type: Type) : Box(x, y, SI
     }
 
     override fun render(view: View, renderer: Renderer) {
-        renderer.drawSheet(Resources.gems, type.ordinal, color.ordinal, resized(sizeOffset))
+        renderer.drawSheet(Resources.gems, color.ordinal, type.ordinal, resized(sizeOffset))
     }
 
     fun remove() {
@@ -70,11 +70,11 @@ class Gem(x: Double, y: Double, val color: Color, val type: Type) : Box(x, y, SI
     enum class Color {
         RED, ORANGE, YELLOW, GREEN, BLUE, PURPLE, WHITE;
 
-        val next get() = values()[(ordinal + 1) % values().size]
+        val next get() = entries[(ordinal + 1) % entries.size]
 
         companion object {
             fun random(random: Random = Random.Default) =
-                values()[random.nextInt(values().size)]
+                entries[random.nextInt(entries.size)]
         }
     }
 

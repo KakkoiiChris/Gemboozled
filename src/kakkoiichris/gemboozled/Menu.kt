@@ -5,6 +5,7 @@ import kakkoiichris.gemboozled.game.Game.Companion.BORDER
 import kakkoiichris.gemboozled.game.GameMode
 import kakkoiichris.hypergame.input.Input
 import kakkoiichris.hypergame.input.Key
+import kakkoiichris.hypergame.media.BlurComposite
 import kakkoiichris.hypergame.media.Renderer
 import kakkoiichris.hypergame.state.State
 import kakkoiichris.hypergame.state.StateManager
@@ -33,7 +34,7 @@ object Menu : State {
         title.update(view, manager, time, input)
 
         if (input.keyDown(Key.SPACE)) {
-            manager.push(Game(GameMode.Builtin.CHAOS))
+            manager.push(Game(GameMode.Builtin.TIME_TRIAL))
         }
     }
 
@@ -41,6 +42,14 @@ object Menu : State {
         background.render(view, renderer)
 
         title.render(view, renderer)
+
+        val last = renderer.composite
+
+        renderer.composite = BlurComposite(2)
+
+        renderer.fillRect(view.width / 4, view.height / 4, view.width / 2, view.height / 2)
+
+        renderer.composite = last
     }
 
     override fun halt(view: View) {

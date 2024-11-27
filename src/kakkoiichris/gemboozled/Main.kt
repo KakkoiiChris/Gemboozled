@@ -1,7 +1,6 @@
 package kakkoiichris.gemboozled
 
 import kakkoiichris.gemboozled.game.Game
-import kakkoiichris.gemboozled.game.GameMode
 import kakkoiichris.gemboozled.game.Gem
 import kakkoiichris.hypergame.view.Display
 

@@ -1,6 +1,5 @@
 package kakkoiichris.gemboozled
 
-import kakkoiichris.gemboozled.game.Game.Companion.BORDER
 import kakkoiichris.hypergame.input.Input
 import kakkoiichris.hypergame.media.Colors
 import kakkoiichris.hypergame.media.Renderable
