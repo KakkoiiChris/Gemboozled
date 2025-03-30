@@ -1,4 +1,4 @@
-package kakkoiichris.gemboozled
+package kakkoiichris.gemboozled.ui
 
 import kakkoiichris.hypergame.input.Input
 import kakkoiichris.hypergame.media.Renderable

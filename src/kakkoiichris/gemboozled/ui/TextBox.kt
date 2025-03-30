@@ -1,5 +1,6 @@
-package kakkoiichris.gemboozled
+package kakkoiichris.gemboozled.ui
 
+import kakkoiichris.gemboozled.Resources
 import kakkoiichris.hypergame.input.Input
 import kakkoiichris.hypergame.media.Colors
 import kakkoiichris.hypergame.media.Renderable

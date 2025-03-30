@@ -1,12 +1,12 @@
 package kakkoiichris.gemboozled.game
 
-import kakkoiichris.gemboozled.Background
 import kakkoiichris.gemboozled.Resources
-import kakkoiichris.gemboozled.TextBox
 import kakkoiichris.gemboozled.game.particles.Explosion
 import kakkoiichris.gemboozled.game.particles.Particle
 import kakkoiichris.gemboozled.game.particles.Points
 import kakkoiichris.gemboozled.game.particles.X
+import kakkoiichris.gemboozled.ui.Background
+import kakkoiichris.gemboozled.ui.TextBox
 import kakkoiichris.hypergame.input.Button
 import kakkoiichris.hypergame.input.Input
 import kakkoiichris.hypergame.input.Key
@@ -23,6 +23,7 @@ import kakkoiichris.hypergame.view.View
 import java.awt.BasicStroke
 import java.awt.Color
 import java.awt.Font
+import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.pow
 
@@ -65,7 +66,7 @@ class Game(val gameMode: GameMode) : State {
 
     private val particles = mutableListOf<Particle>()
 
-    private val selecting get() = state in listOf(GameState.SELECT_FIRST, GameState.SELECT_SECOND)
+    private val selecting get() = state === GameState.SELECT_FIRST || state === GameState.SELECT_SECOND
 
     var gameTime = gameMode.time
     private var totalTime = 0.0
@@ -199,6 +200,12 @@ class Game(val gameMode: GameMode) : State {
             }
         }
 
+        if (input.buttonDown(Button.RIGHT)) {
+            state = GameState.SELECT_FIRST
+
+            return
+        }
+
         if (!input.buttonDown(Button.LEFT)) return
 
         gemSecond = gemHover ?: return
@@ -236,16 +243,16 @@ class Game(val gameMode: GameMode) : State {
     private fun updateSelectWait(time: Time) {
         waitTime += time.seconds
 
-        if (waitTime < 0.3) return
+        if (waitTime < 0.2) return
 
         state = GameState.SWAP
     }
 
     private fun updateNoSwap() {
-        particles.add(X(gemFirst.center))
-        particles.add(X(gemSecond.center))
+        particles += X(gemFirst.center)
+        particles += X(gemSecond.center)
 
-        state = GameState.SELECT_FIRST
+        state = GameState.SELECT_SECOND
     }
 
     private fun updateSwap(time: Time) {
@@ -267,6 +274,7 @@ class Game(val gameMode: GameMode) : State {
         val (rb, cb) = getCoords(gemSecond)
 
         if (!(validateMatch(ra, ca) || validateMatch(rb, cb))) {
+            gems.remove(gemSecond)
             gems.add(gemSecond)
 
             pathFirst.reset()
@@ -291,6 +299,8 @@ class Game(val gameMode: GameMode) : State {
             combo = 0
 
             state = GameState.SELECT_FIRST
+
+            return
         }
 
         if (!clearRemovedGems()) return
@@ -316,10 +326,11 @@ class Game(val gameMode: GameMode) : State {
 
             if (row == gameMode.boardSize - 1) continue
 
-            val other = get(row + 1, column)
+            val gemBelow = get(row + 1, column)
 
-            if (other == null || other.falling) {
+            if (gemBelow == null || gemBelow.falling) {
                 gem.falling = true
+                //TODO: gem.fallWait = (gameMode.boardSize - row) * 0.01
             }
         }
 
@@ -353,7 +364,7 @@ class Game(val gameMode: GameMode) : State {
     private fun updateFallWait(time: Time) {
         waitTime += time.seconds
 
-        if (waitTime < 0.3) return
+        //if (waitTime < 0.2) return
 
         state = GameState.MATCH
     }
@@ -482,19 +493,21 @@ class Game(val gameMode: GameMode) : State {
         }
     }
 
-    private fun fillOffBoard(getter: (Double, Double) -> Gem) {
+    private fun fillOffBoard(chooser: (Double, Double) -> Gem) {
         generateGrid()
 
         for (row in -gameMode.boardSize until 0) {
             for (column in 0 until gameMode.boardSize) {
                 if (get(row, column) != null) continue
 
-                val gem = getter(
+                val gem = chooser(
                     (column * Gem.SIZE).toDouble() + boardBox.x,
                     (row * Gem.SIZE).toDouble() + boardBox.y
                 )
 
                 gem.falling = true
+
+                gem.fallWait = (abs(row) + column) * 0.05
 
                 gems.add(gem)
             }

@@ -24,8 +24,12 @@ import kotlin.random.Random
  *
  * @author Christian Bryce Alexander
  */
-class Gem(x: Double, y: Double, val color: Color, val type: Type) : Box(x, y, SIZE.toDouble(), SIZE.toDouble()),
-    Renderable {
+class Gem(
+    x: Double,
+    y: Double,
+    val color: Color,
+    val type: Type
+) : Box(x, y, SIZE.toDouble(), SIZE.toDouble()), Renderable {
     private val acceleration = Vector(0.0, 0.15)
     private var velocity = Vector()
 
@@ -35,8 +39,13 @@ class Gem(x: Double, y: Double, val color: Color, val type: Type) : Box(x, y, SI
     var removed = false
     var hovering = false
 
+    var fallWait = 0.0
+
     override fun update(view: View, manager: StateManager, time: Time, input: Input) {
-        if (falling) {
+        if (fallWait > 0.0) {
+            fallWait -= time.seconds
+        }
+        else if (falling) {
             velocity += acceleration
             position += velocity * time.delta
         }
@@ -168,5 +177,10 @@ class Gem(x: Double, y: Double, val color: Color, val type: Type) : Box(x, y, SI
 
         protected fun manhattanDistance(ra: Int, ca: Int, rb: Int, cb: Int) =
             abs(ra - rb) + abs(ca - cb)
+
+        companion object {
+            fun random(random: Random = Random.Default) =
+                entries[random.nextInt(entries.size)]
+        }
     }
 }

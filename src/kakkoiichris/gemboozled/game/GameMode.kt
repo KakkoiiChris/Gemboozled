@@ -60,7 +60,7 @@ interface GameMode {
 
         CHAOS("Chaos", 120.0, 10) {
             override fun getRandomStartGem(x: Double, y: Double) =
-                Gem(x, y, Gem.Color.random(), Gem.Type.BASIC)
+                Gem(x, y, Gem.Color.random(), Gem.Type.random())
 
             override fun getRandomGem(x: Double, y: Double): Gem {
                 val color = Gem.Color.random()

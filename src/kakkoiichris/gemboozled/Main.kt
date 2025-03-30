@@ -23,7 +23,7 @@ fun main() {
 
     val display = Display(width, height, title = "Gemboozled", icon = Resources.icon)
 
-    display.manager.push(Menu)
+    display.manager.push(Title)
 
     display.open()
 }
