@@ -5,11 +5,11 @@ import kakkoiichris.gemboozled.game.particles.Explosion
 import kakkoiichris.gemboozled.game.particles.Particle
 import kakkoiichris.gemboozled.game.particles.Points
 import kakkoiichris.gemboozled.game.particles.X
-import kakkoiichris.gemboozled.ui.Background
 import kakkoiichris.gemboozled.ui.TextBox
+import kakkoiichris.gemboozled.ui.menu.Layer
+import kakkoiichris.gemboozled.ui.menu.Menu
 import kakkoiichris.hypergame.input.Button
 import kakkoiichris.hypergame.input.Input
-import kakkoiichris.hypergame.input.Key
 import kakkoiichris.hypergame.media.Colors
 import kakkoiichris.hypergame.media.Renderer
 import kakkoiichris.hypergame.state.State
@@ -29,8 +29,6 @@ import kotlin.math.pow
 
 // Christian Alexander, 12/28/2022
 class Game(val gameMode: GameMode) : State {
-    private val background = Background(Resources.background)
-
     private lateinit var header: TextBox
 
     private val titleBox =
@@ -84,6 +82,8 @@ class Game(val gameMode: GameMode) : State {
 
     private var hue = 0.0
 
+    private lateinit var menu: Menu
+
     init {
         fillOffBoard(gameMode::getStartGem)
 
@@ -101,14 +101,29 @@ class Game(val gameMode: GameMode) : State {
         val headerFont = Font(Resources.font, Font.PLAIN, BORDER * 3 / 2)
 
         header = TextBox(headerBox, gameMode.name, headerFont)
+
+        val menuBox = view.bounds.resized(-BORDER * 8.0)
+        val change = titleBox.height + (BORDER * 2)
+        menuBox.top += change
+        menuBox.height -= change
+
+        menu = Menu(menuBox)
+
+        val items = listOf(
+            kakkoiichris.gemboozled.ui.menu.Button("Replay") { _, _, _, _ -> state = GameState.REPLAY },
+            kakkoiichris.gemboozled.ui.menu.Button("Main Menu") { _, manager, _, _ -> manager.pop() }
+        )
+
+        val topLayer = Layer(null)
+        topLayer += items
+
+        menu.push(topLayer)
     }
 
     override fun swapFrom(view: View) {
     }
 
     override fun update(view: View, manager: StateManager, time: Time, input: Input) {
-        background.update(view, manager, time, input)
-
         header.update(view, manager, time, input)
 
         if (particles.isNotEmpty()) {
@@ -153,7 +168,9 @@ class Game(val gameMode: GameMode) : State {
 
             GameState.FALL_WAIT     -> updateFallWait(time)
 
-            GameState.GAME_OVER     -> updateGameOver(manager, input)
+            GameState.GAME_OVER     -> updateGameOver(view, manager, time, input)
+
+            GameState.REPLAY        -> updateReplay()
         }
     }
 
@@ -369,11 +386,11 @@ class Game(val gameMode: GameMode) : State {
         state = GameState.MATCH
     }
 
-    private fun updateGameOver(manager: StateManager, input: Input) {
-        if (input.keyDown(Key.ESCAPE)) manager.pop()
+    private fun updateGameOver(view: View, manager: StateManager, time: Time, input: Input) {
+        menu.update(view, manager, time, input)
+    }
 
-        if (!input.keyDown(Key.SPACE)) return
-
+    private fun updateReplay() {
         gems.clear()
 
         fillOffBoard(gameMode::getStartGem)
@@ -393,8 +410,6 @@ class Game(val gameMode: GameMode) : State {
     }
 
     override fun render(view: View, renderer: Renderer) {
-        background.render(view, renderer)
-
         header.render(view, renderer)
 
         renderer.color = Resources.clearBlack
@@ -472,6 +487,8 @@ class Game(val gameMode: GameMode) : State {
             renderer.font = Font(Resources.font, Font.PLAIN, BORDER * 4)
 
             renderer.drawString("GAME OVER", view.bounds, yAlign = 0.05)
+
+            menu.render(view, renderer)
         }
     }
 
@@ -780,6 +797,7 @@ class Game(val gameMode: GameMode) : State {
         RETURN,
         FALL,
         FALL_WAIT,
-        GAME_OVER
+        GAME_OVER,
+        REPLAY
     }
 }

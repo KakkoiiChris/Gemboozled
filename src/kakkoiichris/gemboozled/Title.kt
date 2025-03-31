@@ -18,8 +18,6 @@ import kakkoiichris.hypergame.view.View
 import java.awt.Font
 
 object Title : State {
-    private val background = Background(Resources.background)
-
     private lateinit var title: TextBox
 
     private lateinit var menu: Menu
@@ -43,7 +41,6 @@ object Title : State {
 
         val startMenu = SubMenu("Start", startSubItems)
 
-
         val items = listOf(
             startMenu,
             Button("Options") { _, _, _, _ -> },
@@ -61,16 +58,12 @@ object Title : State {
     }
 
     override fun update(view: View, manager: StateManager, time: Time, input: Input) {
-        background.update(view, manager, time, input)
-
         title.update(view, manager, time, input)
 
         menu.update(view, manager, time, input)
     }
 
     override fun render(view: View, renderer: Renderer) {
-        background.render(view, renderer)
-
         title.render(view, renderer)
 
         menu.render(view, renderer)
