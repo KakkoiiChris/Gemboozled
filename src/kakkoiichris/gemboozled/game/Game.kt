@@ -1,6 +1,7 @@
 package kakkoiichris.gemboozled.game
 
 import kakkoiichris.gemboozled.Resources
+import kakkoiichris.gemboozled.Results
 import kakkoiichris.gemboozled.game.particles.Explosion
 import kakkoiichris.gemboozled.game.particles.Particle
 import kakkoiichris.gemboozled.game.particles.Points
@@ -74,6 +75,7 @@ class Game(val gameMode: GameMode) : State {
     private var displayedScore = 0.0
 
     private var combo = 0
+    private var comboCount = 0
     private var lastCombo = 0
     private var maxCombo = 0
 
@@ -81,8 +83,6 @@ class Game(val gameMode: GameMode) : State {
     private var waitTime = 0.0
 
     private var hue = 0.0
-
-    private lateinit var menu: Menu
 
     init {
         fillOffBoard(gameMode::getStartGem)
@@ -101,23 +101,6 @@ class Game(val gameMode: GameMode) : State {
         val headerFont = Font(Resources.font, Font.PLAIN, BORDER * 3 / 2)
 
         header = TextBox(headerBox, gameMode.name, headerFont)
-
-        val menuBox = view.bounds.resized(-BORDER * 8.0)
-        val change = titleBox.height + (BORDER * 2)
-        menuBox.top += change
-        menuBox.height -= change
-
-        menu = Menu(menuBox)
-
-        val items = listOf(
-            kakkoiichris.gemboozled.ui.menu.Button("Replay") { _, _, _, _ -> state = GameState.REPLAY },
-            kakkoiichris.gemboozled.ui.menu.Button("Main Menu") { _, manager, _, _ -> manager.pop() }
-        )
-
-        val topLayer = Layer(null)
-        topLayer += items
-
-        menu.push(topLayer)
     }
 
     override fun swapFrom(view: View) {
@@ -169,8 +152,6 @@ class Game(val gameMode: GameMode) : State {
             GameState.FALL_WAIT     -> updateFallWait(time)
 
             GameState.GAME_OVER     -> updateGameOver(view, manager, time, input)
-
-            GameState.REPLAY        -> updateReplay()
         }
     }
 
@@ -323,6 +304,7 @@ class Game(val gameMode: GameMode) : State {
         if (!clearRemovedGems()) return
 
         combo++
+        comboCount++
 
         for (gem in scoredGems) {
             val points = gem.type.score * (2.0.pow(combo - 1)).toInt()
@@ -387,10 +369,10 @@ class Game(val gameMode: GameMode) : State {
     }
 
     private fun updateGameOver(view: View, manager: StateManager, time: Time, input: Input) {
-        menu.update(view, manager, time, input)
-    }
+        val results = Results(gameMode, score, totalTime, comboCount, maxCombo)
 
-    private fun updateReplay() {
+        manager.push(results)
+
         gems.clear()
 
         fillOffBoard(gameMode::getStartGem)
@@ -477,19 +459,6 @@ class Game(val gameMode: GameMode) : State {
 
         renderer.drawString("COMBO", comboBox, xAlign = 0.0)
         renderer.drawString(comboString, comboBox, xAlign = 1.0)
-
-        if (state == GameState.GAME_OVER) {
-            renderer.color = Resources.clearBlack
-
-            renderer.fillRect(view.bounds)
-
-            renderer.color = Colors.white
-            renderer.font = Font(Resources.font, Font.PLAIN, BORDER * 4)
-
-            renderer.drawString("GAME OVER", view.bounds, yAlign = 0.05)
-
-            menu.render(view, renderer)
-        }
     }
 
     override fun halt(view: View) {
@@ -797,7 +766,6 @@ class Game(val gameMode: GameMode) : State {
         RETURN,
         FALL,
         FALL_WAIT,
-        GAME_OVER,
-        REPLAY
+        GAME_OVER
     }
 }

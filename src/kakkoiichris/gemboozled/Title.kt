@@ -3,7 +3,6 @@ package kakkoiichris.gemboozled
 import kakkoiichris.gemboozled.game.Game
 import kakkoiichris.gemboozled.game.Game.Companion.BORDER
 import kakkoiichris.gemboozled.game.GameMode
-import kakkoiichris.gemboozled.ui.Background
 import kakkoiichris.gemboozled.ui.TextBox
 import kakkoiichris.gemboozled.ui.menu.Button
 import kakkoiichris.gemboozled.ui.menu.Layer
