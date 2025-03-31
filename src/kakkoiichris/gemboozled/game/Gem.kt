@@ -72,6 +72,18 @@ class Gem(
     fun affectGame(game: Game, row: Int, column: Int) =
         type.affectGame(game, row, column, color)
 
+    fun copy(x: Double = this.x, y: Double = this.y, color: Color = this.color, type: Type = this.type): Gem {
+        val gem = Gem(x, y, color, type)
+
+        gem.velocity = this.velocity
+        gem.falling = this.falling
+        gem.removed = this.removed
+        gem.hovering = this.hovering
+        gem.fallWait = this.fallWait
+
+        return gem
+    }
+
     companion object {
         const val SIZE = 51
     }
@@ -92,7 +104,7 @@ class Gem(
 
         CROSS {
             override fun affectGame(game: Game, row: Int, column: Int, color: Color) {
-                for (i in 0 until game.gameMode.boardSize) {
+                for (i in 0 until game.gameMode.size) {
                     game.removeAt(row, i)
                     game.removeAt(i, column)
                 }
@@ -104,12 +116,12 @@ class Gem(
                 for (rowOffset in -2..2) {
                     val actualRow = row + rowOffset
 
-                    if (actualRow !in 0 until game.gameMode.boardSize) continue
+                    if (actualRow !in 0 until game.gameMode.size) continue
 
                     for (columnOffset in -2..2) {
                         val actualColumn = column + columnOffset
 
-                        if (actualColumn !in 0 until game.gameMode.boardSize) continue
+                        if (actualColumn !in 0 until game.gameMode.size) continue
 
                         if (manhattanDistance(0, 0, rowOffset, columnOffset) > 2) continue
 
@@ -132,8 +144,8 @@ class Gem(
                     var cc: Int
 
                     do {
-                        rr = Random.nextInt(game.gameMode.boardSize)
-                        cc = Random.nextInt(game.gameMode.boardSize)
+                        rr = Random.nextInt(game.gameMode.size)
+                        cc = Random.nextInt(game.gameMode.size)
                     }
                     while (game.isRemoved(rr, cc) == true)
 

@@ -3,13 +3,13 @@ package kakkoiichris.gemboozled
 import kakkoiichris.gemboozled.game.Game
 import kakkoiichris.gemboozled.game.Game.Companion.BORDER
 import kakkoiichris.gemboozled.game.GameMode
-import kakkoiichris.gemboozled.ui.*
+import kakkoiichris.gemboozled.ui.Background
+import kakkoiichris.gemboozled.ui.TextBox
 import kakkoiichris.gemboozled.ui.menu.Button
 import kakkoiichris.gemboozled.ui.menu.Layer
 import kakkoiichris.gemboozled.ui.menu.Menu
 import kakkoiichris.gemboozled.ui.menu.SubMenu
 import kakkoiichris.hypergame.input.Input
-import kakkoiichris.hypergame.input.Key
 import kakkoiichris.hypergame.media.Renderer
 import kakkoiichris.hypergame.state.State
 import kakkoiichris.hypergame.state.StateManager
@@ -37,8 +37,8 @@ object Title : State {
 
         menu = Menu(menuBox)
 
-        val startSubItems = GameMode.Builtin.entries.map {
-            Button(it.modeName) { _, manager, _, _ -> manager.push(Game(it)) }
+        val startSubItems = GameMode.loadAll().map {
+            Button(it.name) { _, manager, _, _ -> manager.push(Game(it)) }
         }
 
         val startMenu = SubMenu("Start", startSubItems)
@@ -46,9 +46,9 @@ object Title : State {
 
         val items = listOf(
             startMenu,
-            Button("Options") { view, manager, time, input -> },
-            Button("Credits") { view, manager, time, input -> },
-            Button("Quit") { view, manager, time, input -> view.close() }
+            Button("Options") { _, _, _, _ -> },
+            Button("Credits") { _, _, _, _ -> },
+            Button("Quit") { v, _, _, _ -> v.close() }
         )
 
         val topLayer = Layer(null)
@@ -66,10 +66,6 @@ object Title : State {
         title.update(view, manager, time, input)
 
         menu.update(view, manager, time, input)
-
-        if (input.keyDown(Key.SPACE)) {
-            manager.push(Game(GameMode.Builtin.CHAOS))
-        }
     }
 
     override fun render(view: View, renderer: Renderer) {

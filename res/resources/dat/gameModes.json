@@ -1,0 +1,93 @@
+{
+  "modes": [
+    {
+      "name": "Classic",
+      "time": 120,
+      "size": 10,
+      "end": {
+        "type": "clock",
+        "over": false,
+        "limit": 0
+      },
+      "startGemWeights": {
+        "color": [1, 1, 1, 1, 1, 1, 1],
+        "type": [1]
+      },
+      "gemWeights": {
+        "color": [1, 1, 1, 1, 1, 1, 1],
+        "type": [1]
+      }
+    },
+    {
+      "name": "Hi-Score",
+      "time": 120,
+      "size": 10,
+      "end": {
+        "type": "score",
+        "limit": 1000
+      },
+      "startGemWeights": {
+        "color": [1, 1, 1, 1, 1, 1, 1],
+        "type": [1]
+      },
+      "gemWeights": {
+        "color": [1, 1, 1, 1, 1, 1, 1],
+        "type": [1]
+      }
+    },
+    {
+      "name": "Bonus Rush",
+      "time": 120,
+      "size": 10,
+      "end": {
+        "type": "clock",
+        "over": false,
+        "limit": 0
+      },
+      "startGemWeights": {
+        "color": [1, 1, 1, 1, 1, 1, 1],
+        "type": [1]
+      },
+      "gemWeights": {
+        "color": [1, 1, 1, 1, 1, 1, 1],
+        "type": [1, 0, 0, 0, 0, 0, 1]
+      }
+    },
+    {
+      "name": "Time Trial",
+      "time": 60,
+      "size": 10,
+      "end": {
+        "type": "clock",
+        "over": false,
+        "limit": 0
+      },
+      "startGemWeights": {
+        "color": [1, 1, 1, 1, 1, 1, 1],
+        "type": [76, 0, 0, 0, 0, 0, 0, 12, 8, 4]
+      },
+      "gemWeights": {
+        "color": [1, 1, 1, 1, 1, 1, 1],
+        "type": [76, 0, 0, 0, 0, 0, 0, 12, 8, 4]
+      }
+    },
+    {
+      "name": "Chaos!!!",
+      "time": 120,
+      "size": 10,
+      "end": {
+        "type": "clock",
+        "over": false,
+        "limit": 0
+      },
+      "startGemWeights": {
+        "color": [1, 1, 1, 1, 1, 1, 1],
+        "type": [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+      },
+      "gemWeights": {
+        "color": [1, 1, 1, 1, 1, 1, 1],
+        "type": [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+      }
+    }
+  ]
+}

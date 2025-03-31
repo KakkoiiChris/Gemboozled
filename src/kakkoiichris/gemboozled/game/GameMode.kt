@@ -1,5 +1,7 @@
 package kakkoiichris.gemboozled.game
 
+import kakkoiichris.gemboozled.Resources
+import kakkoiichris.hypergame.util.data.json.Node
 import kotlin.random.Random
 
 /**
@@ -13,104 +15,159 @@ import kotlin.random.Random
  *
  * @author Christian Bryce Alexander
  */
-interface GameMode {
-    val modeName: String
+data class GameMode(
+    val name: String,
+    val time: Double,
+    val size: Int,
+    val end: End,
+    val startGemGenerator: GemGenerator,
+    val gemGenerator: GemGenerator
+) {
+    fun getStartGem(x: Double, y: Double) =
+        startGemGenerator.generate(x, y)
 
-    val time: Double
+    fun getGem(x: Double, y: Double) =
+        gemGenerator.generate(x, y)
 
-    val boardSize: Int
+    companion object {
+        fun loadAll(): List<GameMode> {
+            val gameModes = mutableListOf<GameMode>()
 
-    fun getRandomStartGem(x: Double, y: Double): Gem
+            val json = Resources.gameModes
+            val list = json["modes"]!!.asObjectArray()
 
-    fun getRandomGem(x: Double, y: Double): Gem
-
-    enum class Builtin(override val modeName: String, override val time: Double, override val boardSize: Int) :
-        GameMode {
-        CLASSIC("Classic", 120.0, 10) {
-            override fun getRandomStartGem(x: Double, y: Double) =
-                Gem(x, y, Gem.Color.random(), Gem.Type.BASIC)
-
-            override fun getRandomGem(x: Double, y: Double) =
-                Gem(x, y, Gem.Color.random(), Gem.Type.BASIC)
-        },
-
-        TIME_TRIAL("Time Trial", 120.0, 10) {
-            override fun getRandomStartGem(x: Double, y: Double) =
-                Gem(x, y, Gem.Color.random(), Gem.Type.BASIC)
-
-            override fun getRandomGem(x: Double, y: Double): Gem {
-                val color = Gem.Color.random()
-
-                val type = if (Random.nextDouble() < 0.95) {
-                    Gem.Type.BASIC
-                }
-                else {
-                    val t = Random.nextDouble()
-
-                    when {
-                        t < 1.0 / 2.0 -> Gem.Type.TEN_SECOND
-                        t < 5.0 / 6.0 -> Gem.Type.TWENTY_SECOND
-                        else          -> Gem.Type.THIRTY_SECOND
-                    }
-                }
-
-                return Gem(x, y, color, type)
+            for (modeData in list) {
+                gameModes += parseGameMode(modeData)
             }
-        },
 
-        CHAOS("Chaos", 120.0, 10) {
-            override fun getRandomStartGem(x: Double, y: Double) =
-                Gem(x, y, Gem.Color.random(), Gem.Type.random())
+            return gameModes
+        }
 
-            override fun getRandomGem(x: Double, y: Double): Gem {
-                val color = Gem.Color.random()
+        private fun parseGameMode(modeData: Node.Object): GameMode {
+            val name = modeData["name"]!!.asString()
+            val time = modeData["time"]!!.asDouble()
+            val size = modeData["size"]!!.asInt()
 
-                val type = if (Random.nextDouble() < 0.85) {
-                    Gem.Type.BASIC
-                }
-                else {
-                    val s = Random.nextDouble()
+            val endData = modeData["end"]!!.asObject()
+            val end = parseEnd(endData)
 
-                    when {
-                        s < 1.0 / 7.0 -> Gem.Type.CROSS
-                        s < 2.0 / 7.0 -> Gem.Type.EXPLODE
-                        s < 3.0 / 7.0 -> Gem.Type.SOLE
-                        s < 4.0 / 7.0 -> Gem.Type.SCATTER
-                        s < 5.0 / 7.0 -> Gem.Type.WARP
-                        s < 6.0 / 7.0 -> Gem.Type.BONUS
-                        else          -> {
-                            val t = Random.nextDouble()
+            val startGemData = modeData["startGemWeights"]!!.asObject()
+            val startGemGenerator = parseGemGenerator(startGemData)
 
-                            when {
-                                t < 1.0 / 2.0 -> Gem.Type.TEN_SECOND
-                                t < 5.0 / 6.0 -> Gem.Type.TWENTY_SECOND
-                                else          -> Gem.Type.THIRTY_SECOND
-                            }
-                        }
-                    }
+            val gemData = modeData["gemWeights"]!!.asObject()
+            val gemGenerator = parseGemGenerator(gemData)
+
+            return GameMode(name, time, size, end, startGemGenerator, gemGenerator)
+        }
+
+        private fun parseEnd(endData: Node.Object): End {
+            val type = endData["type"]!!.asString()
+
+            return when (type) {
+                "clock" -> {
+                    val over = endData["over"]!!.asBoolean()
+                    val limit = endData["limit"]!!.asDouble()
+
+                    End.Clock(over, limit)
                 }
 
-                return Gem(x, y, color, type)
+                "score" -> {
+                    val limit = endData["limit"]!!.asInt()
+
+                    End.Score(limit)
+                }
+
+                else    -> TODO("WRONG END")
             }
-        },
+        }
 
-        BONUS_RUSH("Bonus Rush", 120.0, 10) {
-            override fun getRandomStartGem(x: Double, y: Double) =
-                Gem(x, y, Gem.Color.random(), Gem.Type.BASIC)
+        private fun parseGemGenerator(gemData: Node.Object): GemGenerator {
+            val colorWeights = gemData["color"]!!.asIntArray()
+            val typeWeights = gemData["type"]!!.asIntArray()
 
-            override fun getRandomGem(x: Double, y: Double): Gem {
-                val color = Gem.Color.random()
+            return GemGenerator(colorWeights, typeWeights)
+        }
+    }
+}
 
-                val type = if (Random.nextDouble() < 0.5) Gem.Type.BASIC else Gem.Type.BONUS
+sealed interface End {
+    fun isMet(game: Game): Boolean
 
-                return Gem(x, y, color, type)
+    data class Clock(val over: Boolean, val limit: Double) : End {
+        override fun isMet(game: Game) =
+            if (over)
+                game.gameTime >= limit
+            else
+                game.gameTime <= limit
+    }
+
+    data class Score(val limit: Int) : End {
+        override fun isMet(game: Game) =
+            game.score >= limit
+    }
+}
+
+class GemGenerator(colorWeights: IntArray, typeWeights: IntArray) {
+    val colorGradient = createGradient(colorWeights)
+    val typeGradient = createGradient(typeWeights)
+
+    private fun createGradient(weights: IntArray): Gradient {
+        val cumulativeWeights = weights
+            .mapIndexed { i, w -> Weight(i, w) }
+            .sortedBy(Weight::weight)
+            .filter { it.weight != 0 }
+            .toMutableList()
+
+        val sum = cumulativeWeights.sumOf { it.weight }
+
+        for (i in 1..<cumulativeWeights.size) {
+            cumulativeWeights[i] += cumulativeWeights[i - 1]
+        }
+
+        return Gradient(sum, cumulativeWeights.toTypedArray())
+    }
+
+    fun generate(x: Double, y: Double): Gem {
+        val colorIndex = colorGradient.get()
+        val typeIndex = typeGradient.get()
+
+        return Gem(x, y, Gem.Color.entries[colorIndex], Gem.Type.entries[typeIndex])
+    }
+
+    data class Gradient(val sum:Int, val weights: Array<Weight>) {
+        fun get(random: Random = Random.Default): Int {
+            val g = random.nextInt(sum + 1)
+
+            for ((element, weight) in weights) {
+                if (g < weight) {
+                    return element
+                }
             }
+
+            return weights.last().element
+        }
+
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (javaClass != other?.javaClass) return false
+
+            other as Gradient
+
+            if (sum != other.sum) return false
+            if (!weights.contentEquals(other.weights)) return false
+
+            return true
+        }
+
+        override fun hashCode(): Int {
+            var result = sum
+            result = 31 * result + weights.contentHashCode()
+            return result
         }
     }
 
-    class Custom(override val modeName: String, override val time: Double, override val boardSize: Int) : GameMode {
-        override fun getRandomStartGem(x: Double, y: Double) = Gem(x, y, Gem.Color.WHITE, Gem.Type.BASIC)
-
-        override fun getRandomGem(x: Double, y: Double) = Gem(x, y, Gem.Color.WHITE, Gem.Type.BASIC)
+    data class Weight(val element: Int, val weight: Int) {
+        operator fun plus(other: Weight) =
+            Weight(element, weight + other.weight)
     }
 }

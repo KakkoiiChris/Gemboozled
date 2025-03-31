@@ -4,6 +4,7 @@ import kakkoiichris.gemboozled.game.Gem
 import kakkoiichris.hypergame.media.Animation
 import kakkoiichris.hypergame.media.Sprite
 import kakkoiichris.hypergame.media.SpriteSheet
+import kakkoiichris.hypergame.util.data.json.JSON
 import kakkoiichris.hypergame.util.filesystem.ResourceManager
 import java.awt.Color
 
@@ -23,6 +24,8 @@ object Resources {
 
     val font: String
 
+    val gameModes: JSON
+
     val clearBlack = Color(0, 0, 0, 191)
     val clearWhite = Color(255, 255, 255, 63)
 
@@ -31,6 +34,7 @@ object Resources {
 
         val images = manager.getFolder("img")
         val fonts = manager.getFolder("fnt")
+        val data = manager.getFolder("dat")
         //val sounds = manager.getFolder("sfx")
 
         icon = images.getSprite("icon")
@@ -54,5 +58,7 @@ object Resources {
         explosion = Animation(explosionSheet.sprites, 0.025, Animation.Style.ONCE)
 
         font = fonts.getFont("charybdis")
+
+        gameModes = data.getJSON("gameModes")
     }
 }

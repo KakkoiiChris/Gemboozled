@@ -34,17 +34,17 @@ class Game(val gameMode: GameMode) : State {
     private lateinit var header: TextBox
 
     private val titleBox =
-        Box(BORDER.toDouble(), BORDER.toDouble(), (Gem.SIZE * gameMode.boardSize).toDouble(), BORDER * 2.0)
+        Box(BORDER.toDouble(), BORDER.toDouble(), (Gem.SIZE * gameMode.size).toDouble(), BORDER * 2.0)
 
     private val boardBox = Box(
         BORDER.toDouble(),
         titleBox.bottom + BORDER,
-        (Gem.SIZE * gameMode.boardSize).toDouble(),
-        (Gem.SIZE * gameMode.boardSize).toDouble()
+        (Gem.SIZE * gameMode.size).toDouble(),
+        (Gem.SIZE * gameMode.size).toDouble()
     )
 
     private val statsBox =
-        Box(BORDER.toDouble(), boardBox.bottom + BORDER, (Gem.SIZE * gameMode.boardSize).toDouble(), BORDER * 4.0)
+        Box(BORDER.toDouble(), boardBox.bottom + BORDER, (Gem.SIZE * gameMode.size).toDouble(), BORDER * 4.0)
 
     private val timeBox: Box
     private val scoreBox: Box
@@ -72,7 +72,7 @@ class Game(val gameMode: GameMode) : State {
     private var totalTime = 0.0
     private var timePaused = true
 
-    private var score = 0
+    var score = 0
     private var displayedScore = 0.0
 
     private var combo = 0
@@ -85,7 +85,7 @@ class Game(val gameMode: GameMode) : State {
     private var hue = 0.0
 
     init {
-        fillOffBoard(gameMode::getRandomStartGem)
+        fillOffBoard(gameMode::getStartGem)
 
         constrainOffBoard()
 
@@ -100,7 +100,7 @@ class Game(val gameMode: GameMode) : State {
         val headerBox = view.bounds.resized(-BORDER * 2.0).copy(height = BORDER * 2.0)
         val headerFont = Font(Resources.font, Font.PLAIN, BORDER * 3 / 2)
 
-        header = TextBox(headerBox, gameMode.modeName, headerFont)
+        header = TextBox(headerBox, gameMode.name, headerFont)
     }
 
     override fun swapFrom(view: View) {
@@ -124,7 +124,7 @@ class Game(val gameMode: GameMode) : State {
             totalTime += time.seconds
         }
 
-        if (selecting && gameTime <= 0) {
+        if (selecting && gameMode.end.isMet(this)) {
             state = GameState.GAME_OVER
         }
 
@@ -324,7 +324,7 @@ class Game(val gameMode: GameMode) : State {
         for (gem in gems.sortedByDescending { it.y }) {
             val (row, column) = getCoords(gem)
 
-            if (row == gameMode.boardSize - 1) continue
+            if (row == gameMode.size - 1) continue
 
             val gemBelow = get(row + 1, column)
 
@@ -334,7 +334,7 @@ class Game(val gameMode: GameMode) : State {
             }
         }
 
-        fillOffBoard(gameMode::getRandomGem)
+        fillOffBoard(gameMode::getGem)
 
         state = GameState.FALL
     }
@@ -376,7 +376,7 @@ class Game(val gameMode: GameMode) : State {
 
         gems.clear()
 
-        fillOffBoard(gameMode::getRandomStartGem)
+        fillOffBoard(gameMode::getStartGem)
 
         constrainOffBoard()
 
@@ -404,8 +404,8 @@ class Game(val gameMode: GameMode) : State {
         renderer.push()
         renderer.clip = boardBox.rectangle
 
-        for (row in 0 until gameMode.boardSize) {
-            for (column in 0 until gameMode.boardSize) {
+        for (row in 0 until gameMode.size) {
+            for (column in 0 until gameMode.size) {
                 renderer.color = if ((row + column) % 2 == 0) Resources.clearBlack else Resources.clearWhite
 
                 renderer.fillRect(
@@ -458,7 +458,7 @@ class Game(val gameMode: GameMode) : State {
         renderer.drawString("SCORE", scoreBox, xAlign = 0.0)
         renderer.drawString(scoreString, scoreBox, xAlign = 1.0)
 
-        val comboString = "$combo / $lastCombo / $maxCombo"
+        val comboString = "NOW $combo / LAST $lastCombo / MAX $maxCombo"
 
         renderer.drawString("COMBO", comboBox, xAlign = 0.0)
         renderer.drawString(comboString, comboBox, xAlign = 1.0)
@@ -496,8 +496,8 @@ class Game(val gameMode: GameMode) : State {
     private fun fillOffBoard(chooser: (Double, Double) -> Gem) {
         generateGrid()
 
-        for (row in -gameMode.boardSize until 0) {
-            for (column in 0 until gameMode.boardSize) {
+        for (row in -gameMode.size until 0) {
+            for (column in 0 until gameMode.size) {
                 if (get(row, column) != null) continue
 
                 val gem = chooser(
@@ -517,25 +517,24 @@ class Game(val gameMode: GameMode) : State {
     private fun constrainOffBoard() {
         generateGrid()
 
-        for (row in -gameMode.boardSize until 0) {
-            for (column in 0 until gameMode.boardSize) {
+        for (row in -gameMode.size until 0) {
+            for (column in 0 until gameMode.size) {
                 val gem = get(row, column)!!
 
                 val colorCenter = gem.color
                 val colorUp = if (row - 1 >= 0) get(row - 1, column)?.color else null
-                val colorDown = if (row + 1 < gameMode.boardSize) get(row + 1, column)?.color else null
+                val colorDown = if (row + 1 < gameMode.size) get(row + 1, column)?.color else null
                 val colorLeft = if (column - 1 >= 0) get(row, column - 1)?.color else null
-                val colorRight = if (column + 1 < gameMode.boardSize) get(row, column + 1)?.color else null
+                val colorRight = if (column + 1 < gameMode.size) get(row, column + 1)?.color else null
 
                 val vertical = colorUp == colorCenter && colorCenter == colorDown
                 val horizontal = colorLeft == colorCenter && colorCenter == colorRight
 
                 if (!(vertical || horizontal)) continue
 
-                val newColor = colorCenter.next
+                val newColor = Gem.Color.random()
 
-                val newGem = Gem(gem.x, gem.y, newColor, gem.type)
-                newGem.falling = gem.falling
+                val newGem = gem.copy(color = newColor)
 
                 val index = gems.indexOf(gem)
 
@@ -609,7 +608,7 @@ class Game(val gameMode: GameMode) : State {
             get(row - 1, column)?.color
         else null
 
-        val colorDown = if (row + 1 < gameMode.boardSize)
+        val colorDown = if (row + 1 < gameMode.size)
             get(row + 1, column)?.color
         else null
 
@@ -617,7 +616,7 @@ class Game(val gameMode: GameMode) : State {
             get(row, column - 1)?.color
         else null
 
-        val colorRight = if (column + 1 < gameMode.boardSize)
+        val colorRight = if (column + 1 < gameMode.size)
             get(row, column + 1)?.color
         else null
 
@@ -625,7 +624,7 @@ class Game(val gameMode: GameMode) : State {
             get(row - 2, column)?.color
         else null
 
-        val color2Down = if (row + 2 < gameMode.boardSize)
+        val color2Down = if (row + 2 < gameMode.size)
             get(row + 2, column)?.color
         else null
 
@@ -633,7 +632,7 @@ class Game(val gameMode: GameMode) : State {
             get(row, column - 2)?.color
         else null
 
-        val color2Right = if (column + 2 < gameMode.boardSize)
+        val color2Right = if (column + 2 < gameMode.size)
             get(row, column + 2)?.color
         else null
 
@@ -653,15 +652,15 @@ class Game(val gameMode: GameMode) : State {
     private fun matchGems(): Boolean {
         var matched = false
 
-        for (row in 0 until gameMode.boardSize) {
-            for (column in 0 until gameMode.boardSize) {
+        for (row in 0 until gameMode.size) {
+            for (column in 0 until gameMode.size) {
                 val colorCenter = get(row, column)?.color ?: continue
 
                 val colorUp = if (row - 1 >= 0)
                     get(row - 1, column)?.color
                 else null
 
-                val colorDown = if (row + 1 < gameMode.boardSize)
+                val colorDown = if (row + 1 < gameMode.size)
                     get(row + 1, column)?.color
                 else null
 
@@ -669,7 +668,7 @@ class Game(val gameMode: GameMode) : State {
                     get(row, column - 1)?.color
                 else null
 
-                val colorRight = if (column + 1 < gameMode.boardSize)
+                val colorRight = if (column + 1 < gameMode.size)
                     get(row, column + 1)?.color
                 else null
 
@@ -684,18 +683,6 @@ class Game(val gameMode: GameMode) : State {
 
                     matched = true
                 }
-
-                /*
-                if (colorCenter == Gem.Color.ALL.ordinal && (colorUp == colorDown && colorUp != -1)) {
-                    matchVertical(row, column, colorUp)
-                    matched = true
-                }
-                
-                if (colorCenter == Gem.Color.ALL.ordinal && (colorLeft == colorRight && colorLeft != -1)) {
-                    matchHorizontal(row, column, colorLeft)
-                    matched = true
-                }
-                */
             }
         }
 
@@ -714,7 +701,7 @@ class Game(val gameMode: GameMode) : State {
             else break
         }
 
-        for (i in r + 1 until gameMode.boardSize) {
+        for (i in r + 1 until gameMode.size) {
             val gem = get(i, c)
 
             if (gem?.color == color) {
@@ -738,7 +725,7 @@ class Game(val gameMode: GameMode) : State {
             else break
         }
 
-        for (i in column + 1 until gameMode.boardSize) {
+        for (i in column + 1 until gameMode.size) {
             val gem = get(row, i)
 
             if (gem?.color == color) {
@@ -761,8 +748,8 @@ class Game(val gameMode: GameMode) : State {
     private fun clearRemovedGems(): Boolean {
         var removed = false
 
-        for (r in 0 until gameMode.boardSize) {
-            for (c in 0 until gameMode.boardSize) {
+        for (r in 0 until gameMode.size) {
+            for (c in 0 until gameMode.size) {
                 val gem = get(r, c)
 
                 if (gem != null && gem.removed) {
