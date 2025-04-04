@@ -82,11 +82,29 @@
       },
       "startGemWeights": {
         "color": [1, 1, 1, 1, 1, 1, 1],
-        "type": [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+        "type": [1, 1, 1, 1, 1, 1, 1, 0, 0, 0]
       },
       "gemWeights": {
         "color": [1, 1, 1, 1, 1, 1, 1],
-        "type": [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+        "type": [1, 1, 1, 1, 1, 1, 1, 0, 0, 0]
+      }
+    },
+    {
+      "name": "Limited",
+      "time": 120,
+      "size": 10,
+      "end": {
+        "type": "clock",
+        "over": false,
+        "limit": 0
+      },
+      "startGemWeights": {
+        "color": [1, 0, 1, 0, 1, 0, 1],
+        "type": [50, 1, 1, 0, 1]
+      },
+      "gemWeights": {
+        "color": [1, 0, 1, 0, 1, 0, 1],
+        "type": [50, 1, 1, 0, 1]
       }
     }
   ]

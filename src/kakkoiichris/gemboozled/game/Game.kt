@@ -2,13 +2,14 @@ package kakkoiichris.gemboozled.game
 
 import kakkoiichris.gemboozled.Resources
 import kakkoiichris.gemboozled.Results
+import kakkoiichris.gemboozled.asTime
 import kakkoiichris.gemboozled.game.particles.Explosion
 import kakkoiichris.gemboozled.game.particles.Particle
 import kakkoiichris.gemboozled.game.particles.Points
 import kakkoiichris.gemboozled.game.particles.X
 import kakkoiichris.gemboozled.ui.TextBox
-import kakkoiichris.gemboozled.ui.menu.Layer
 import kakkoiichris.gemboozled.ui.menu.Menu
+import kakkoiichris.gemboozled.withCommas
 import kakkoiichris.hypergame.input.Button
 import kakkoiichris.hypergame.input.Input
 import kakkoiichris.hypergame.media.Colors
@@ -441,16 +442,12 @@ class Game(val gameMode: GameMode) : State {
 
         renderer.font = Font(Resources.font, Font.PLAIN, BORDER)
 
-        val minutes = max(gameTime / 60, 0.0).toInt()
-        val seconds = max(gameTime % 60, 0.0).toInt()
-        val microseconds = (max((gameTime % 60) % 1, 0.0) * 100).toInt()
-
-        val timeString = "%d:%02d:%02d".format(minutes, seconds, microseconds)
+        val timeString = gameTime.asTime()
 
         renderer.drawString("TIME", timeBox, xAlign = 0.0)
         renderer.drawString(timeString, timeBox, xAlign = 1.0)
 
-        val scoreString = "%,d".format(displayedScore.toInt())
+        val scoreString = displayedScore.withCommas()
 
         renderer.drawString("SCORE", scoreBox, xAlign = 0.0)
         renderer.drawString(scoreString, scoreBox, xAlign = 1.0)

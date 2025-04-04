@@ -53,7 +53,7 @@ class Results(
         val topLayer = Layer(null)
         topLayer += items
 
-        menu.push(topLayer)
+        menu.pushLayer(topLayer)
     }
 
     override fun swapFrom(view: View) {
@@ -70,9 +70,9 @@ class Results(
 
         renderer.drawString(gameMode.name, statBoxes[0])
         renderer.drawString("SCORE", statBoxes[1], xAlign = 0.0)
-        renderer.drawString(score.toString(), statBoxes[1], xAlign = 1.0)
+        renderer.drawString(score.withCommas(), statBoxes[1], xAlign = 1.0)
         renderer.drawString("TIME", statBoxes[2], xAlign = 0.0)
-        renderer.drawString(time.toString(), statBoxes[2], xAlign = 1.0)
+        renderer.drawString(time.asTime(), statBoxes[2], xAlign = 1.0)
         renderer.drawString("COMBOS", statBoxes[3], xAlign = 0.0)
         renderer.drawString(combos.toString(), statBoxes[3], xAlign = 1.0)
         renderer.drawString("MAX COMBO", statBoxes[4], xAlign = 0.0)

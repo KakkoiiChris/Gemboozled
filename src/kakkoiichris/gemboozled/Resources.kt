@@ -2,6 +2,7 @@ package kakkoiichris.gemboozled
 
 import kakkoiichris.gemboozled.game.Gem
 import kakkoiichris.hypergame.media.Animation
+import kakkoiichris.hypergame.media.Sound
 import kakkoiichris.hypergame.media.Sprite
 import kakkoiichris.hypergame.media.SpriteSheet
 import kakkoiichris.hypergame.util.data.json.JSON
@@ -29,19 +30,22 @@ object Resources {
     val clearBlack = Color(0, 0, 0, 191)
     val clearWhite = Color(255, 255, 255, 63)
 
+    val sound: Sound
+    val song: Sound
+
     init {
         val manager = ResourceManager("/resources")
 
         val images = manager.getFolder("img")
         val fonts = manager.getFolder("fnt")
         val data = manager.getFolder("dat")
-        //val sounds = manager.getFolder("sfx")
+        val sounds = manager.getFolder("sfx")
 
         icon = images.getSprite("icon")
 
         background = images.getSprite("arcade_carpet_512")
 
-        val gemsSprite = images.getSprite("gems")
+        val gemsSprite = images.getSprite("gemsFlat")
 
         gems = SpriteSheet(gemsSprite, Gem.SIZE, Gem.SIZE)
 
@@ -60,5 +64,8 @@ object Resources {
         font = fonts.getFont("charybdis")
 
         gameModes = data.getJSON("gameModes")
+
+        sound = sounds.getSound("game-start-6104")
+        song = sounds.getSound("retro-wave-style-track-59892")
     }
 }

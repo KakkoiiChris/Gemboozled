@@ -42,7 +42,7 @@ object Title : State {
 
         val items = listOf(
             startMenu,
-            Button("Options") { _, _, _, _ -> },
+            Button("Options") { _, _, _, _ -> Resources.sound.play()},
             Button("Credits") { _, _, _, _ -> },
             Button("Quit") { v, _, _, _ -> v.close() }
         )
@@ -50,7 +50,7 @@ object Title : State {
         val topLayer = Layer(null)
         topLayer += items
 
-        menu.push(topLayer)
+        menu.pushLayer(topLayer)
     }
 
     override fun swapFrom(view: View) {
@@ -66,15 +66,6 @@ object Title : State {
         title.render(view, renderer)
 
         menu.render(view, renderer)
-        /*
-                val last = renderer.composite
-
-                renderer.composite = BlurComposite(2)
-
-                renderer.fillRect(view.width / 4, view.height / 4, view.width / 2, view.height / 2)
-
-                renderer.composite = last
-                */
     }
 
     override fun halt(view: View) {

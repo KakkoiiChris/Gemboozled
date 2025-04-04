@@ -35,6 +35,8 @@ fun main() {
     display.manager.push(Title)
 
     display.open()
+
+    Resources.song.loop()
 }
 
 private object Backdrop : Renderable {
